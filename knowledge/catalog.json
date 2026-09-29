@@ -1,0 +1,81 @@
+{
+  "catalog_version": "d4-2026-09-29",
+  "records": [
+    {
+      "id": "internal-watch-2026-09-29",
+      "concept": "internal_watch",
+      "source_type": "internal_project",
+      "status": "active",
+      "version": "source-snapshot-2026-09-29",
+      "title": "House Mill Cloud Flood Server README",
+      "section": "风险等级",
+      "source_ref": "backup/source_snapshot_2026-09-29/cloud_flood_server/README.md",
+      "line_start": 13,
+      "line_end": 20,
+      "sha256": "7cf36cd8079cfc831f35a48fde163759e654679cfae1ef528ab7f67d4dccd3cd",
+      "keywords": ["项目内部Watch", "内部Watch", "Watch", "风险等级", "4.20", "4.43", "项目阈值"],
+      "summary": "项目内部 Watch（level 1）表示未来24小时预测最高水位达到4.20 m但未达到4.43 m。它是项目预测分类，不是 Environment Agency 的官方 Flood Alert，也不是 House Mill 专属行动 SOP。"
+    },
+    {
+      "id": "evaluation-overall-2026-08-10",
+      "concept": "overall_model_evaluation",
+      "source_type": "evaluation_report",
+      "status": "active",
+      "version": "evaluation-2026-08-10T02:02:33Z",
+      "title": "预测与实测总体评估快照",
+      "section": "point_metrics",
+      "source_ref": "backup/source_snapshot_2026-09-29/forecast_evaluation/output/summary.json",
+      "line_start": 19,
+      "line_end": 31,
+      "sha256": "45c11dfeeb39b3a44d86589fcecd2c54f65d8741846636a89182a587a666cff1",
+      "keywords": ["模型评估", "总体MAE", "MAE", "point_metrics", "76091", "误差"],
+      "summary": "该批次已成熟且匹配的预测目标点为76,091，点级 MAE 为0.212531 m；这是评估批次指标，不是独立洪水事件的检出率。"
+    },
+    {
+      "id": "evaluation-highwater-2026-08-10",
+      "concept": "highwater_evaluation_limit",
+      "source_type": "evaluation_report",
+      "status": "active",
+      "version": "evaluation-2026-08-10T02:18:51Z",
+      "title": "2 m及以上实测水位预测评估报告",
+      "section": "风险阈值背景",
+      "source_ref": "backup/source_snapshot_2026-09-29/forecast_evaluation/output_above_2m/HIGH_WATER_EVALUATION_REPORT.md",
+      "line_start": 71,
+      "line_end": 78,
+      "sha256": "935a952dd8d0666ccc3d19262bc11755fa79ef8c03b3125cad8211a1aca211bc",
+      "keywords": ["高水位评估", "Watch召回", "阈值实测", "模型限制", "洪水检出", "无真实Watch事件"],
+      "summary": "报告中达到项目内部 Watch 4.20 m、Warning 4.43 m、Severe 4.70 m 的不同实测目标点均为0，因此不能据此证明这些事件的召回率。"
+    },
+    {
+      "id": "ea-flood-alert-2026-09-29",
+      "concept": "official_flood_alert",
+      "source_type": "official_public_guidance",
+      "status": "active",
+      "version": "web-checked-2026-09-29",
+      "title": "Flood alerts and warnings: what they are and what to do",
+      "section": "Flood alert",
+      "source_ref": "https://www.gov.uk/guidance/flood-alerts-and-warnings-what-they-are-and-what-to-do#flood-alert",
+      "publisher": "Environment Agency / GOV.UK",
+      "applies_to": "England",
+      "published_on": "2010-11-01",
+      "checked_on": "2026-09-29",
+      "keywords": ["官方Flood Alert", "Flood Alert", "英国官方预警", "Environment Agency", "洪水可能", "官方指南"],
+      "summary": "在英格兰，Environment Agency 的 Flood Alert 表示洪水可能发生，应作准备。是否已发布某地区的官方警报，必须另查官方实时服务；本项目的 Watch 不是该官方类别。"
+    },
+    {
+      "id": "ea-check-flooding-2026-09-29",
+      "concept": "official_live_check",
+      "source_type": "official_public_guidance",
+      "status": "active",
+      "version": "web-checked-2026-09-29",
+      "title": "Check for flooding",
+      "section": "Use this service to check",
+      "source_ref": "https://www.gov.uk/check-flooding",
+      "publisher": "GOV.UK",
+      "applies_to": "England",
+      "checked_on": "2026-09-29",
+      "keywords": ["当前官方警报", "查询官方预警", "check flooding", "实时Flood Alert", "官方实时服务"],
+      "summary": "GOV.UK 的 Check for flooding 服务可查询英格兰当前洪水警报/提醒、水位和未来5天风险。本地知识库只保存服务说明，不缓存或推断当前警报状态。"
+    }
+  ]
+}

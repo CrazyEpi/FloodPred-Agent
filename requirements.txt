@@ -1,0 +1,2 @@
+# One maintained Python environment (.venv-d4) for D1-D5.
+pydantic==2.13.5
