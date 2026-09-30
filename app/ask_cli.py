@@ -20,6 +20,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"无法路由：{exc}", file=sys.stderr)
         return 2
     print("路径：" + " → ".join(result.plan.steps))
+    if result.answer_text:
+        print(f"回答（{result.response_mode}）：{result.answer_text}")
     if result.forecast:
         card = result.forecast
         print(f"历史回放预测峰值：{card.predicted_peak_m:.4f} m；目标时间：{card.predicted_peak_utc}")

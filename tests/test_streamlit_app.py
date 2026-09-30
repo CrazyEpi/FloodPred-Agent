@@ -16,7 +16,8 @@ class StreamlitAppTests(unittest.TestCase):
         app = AppTest.from_file(str(APP_FILE)).run()
         self.assertFalse(app.exception)
         self.assertFalse(app.warning)
-        self.assertEqual(app.checkbox[0].label, "让 DeepSeek 帮我理解问题和文档（可能产生少量 API 费用）")
+        self.assertEqual(app.checkbox[0].label, "用 DeepSeek 理解和回答")
+        app.checkbox[0].set_value(False)
         app.button[0].click().run()
         self.assertFalse(app.exception)
         self.assertEqual([tab.label for tab in app.tabs], ["回答", "证据从哪来", "运行细节"])
@@ -25,6 +26,7 @@ class StreamlitAppTests(unittest.TestCase):
 
     def test_mae_and_unsupported_question_states(self) -> None:
         app = AppTest.from_file(str(APP_FILE)).run()
+        app.checkbox[0].set_value(False)
         app.text_input[0].set_value("本批次 MAE 是多少")
         app.button[0].click().run()
         self.assertFalse(app.exception)
