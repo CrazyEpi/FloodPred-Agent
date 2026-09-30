@@ -22,7 +22,7 @@ class KnowledgeTests(unittest.TestCase):
         hits = search("项目内部 Watch 是什么")
         self.assertEqual(len(hits), 1)
         shown = render_hits(hits)
-        self.assertIn("README.md:13-20 § 风险等级", shown)
+        self.assertTrue("README.md:13-20 § 风险等级" in shown or "internal_watch.md:1-8 § 风险等级" in shown)
         self.assertIn("不是 Environment Agency 的官方 Flood Alert", shown)
         self.assertEqual(hits[0].record["source_type"], "internal_project")
 

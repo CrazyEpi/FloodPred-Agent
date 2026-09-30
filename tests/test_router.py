@@ -30,7 +30,7 @@ class RouterTests(unittest.TestCase):
         self.assertAlmostEqual(result.evaluation.mae_m, 0.212531)
         self.assertEqual(result.evaluation.unit, "m")
         self.assertEqual(result.evaluation.matched_prediction_points, 76091)
-        self.assertIn("README.md:13-20", result.knowledge[0].locator)
+        self.assertTrue("README.md:13-20" in result.knowledge[0].locator or "internal_watch.md:1-8" in result.knowledge[0].locator)
 
     def test_mae_is_exact_snapshot_with_version_scope_and_unit(self) -> None:
         overall = evaluation_metrics_tool(EvaluationArgs(scope="overall"))

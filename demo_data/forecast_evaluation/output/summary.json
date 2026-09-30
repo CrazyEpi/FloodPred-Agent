@@ -1,0 +1,88 @@
+{
+  "generated_utc": "2026-08-10T02:02:33.544996Z",
+  "prediction_database": "C:\\UCL\\CASA0016\\CASA0022-Dissertation-FloodPredict\\forecast_evaluation\\prediction_history.sqlite3",
+  "sonar_database": "C:\\UCL\\CASA0016\\CASA0022-Dissertation-FloodPredict\\forecast_evaluation\\sonar_history.sqlite3",
+  "forecast_runs": 817,
+  "forecast_points": 78432,
+  "sonar_points": 3805,
+  "latest_actual_utc": "2026-08-10T01:54:03.150278+00:00",
+  "actual_complete_through_utc": "2026-08-10T01:30:00+00:00",
+  "pending_future_points": 2341,
+  "actual_resample_method": "mean",
+  "match_tolerance_minutes": 8.0,
+  "minimum_run_coverage": 0.9,
+  "thresholds_m": {
+    "watch": 4.2,
+    "warning": 4.43,
+    "severe": 4.7
+  },
+  "point_metrics": {
+    "matured_points": 76091,
+    "matched_points": 76091,
+    "coverage": 1.0,
+    "bias_m": 0.138773,
+    "mae_m": 0.212531,
+    "mean_absolute_error_m": 0.212531,
+    "median_absolute_error_m": 0.1886,
+    "maximum_absolute_error_m": 1.0374,
+    "median_signed_error_m": 0.1607,
+    "rmse_m": 0.262225,
+    "pearson_r": 0.973814,
+    "r_squared": 0.92806
+  },
+  "maximum_error_point": {
+    "run_id": "ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+    "forecast_generated_utc": "2026-08-03T01:47:59.737191+00:00",
+    "target_utc": "2026-08-03T13:45:00+00:00",
+    "lead_minutes": 720.0,
+    "predicted_water_m": 0.9606,
+    "actual_water_m": 1.9980000000000002,
+    "signed_error_m": -1.0374000000000003,
+    "absolute_error_m": 1.0374000000000003
+  },
+  "evaluated_lead_time_statistics": {
+    "points": 76091,
+    "minimum_minutes": 15.0,
+    "maximum_minutes": 1440.0,
+    "mean_minutes": 720.315,
+    "median_minutes": 720.0,
+    "minimum_hours": 0.25,
+    "maximum_hours": 24.0,
+    "mean_hours": 12.0053,
+    "median_hours": 12.0
+  },
+  "archived_lead_time_statistics": {
+    "points": 78432,
+    "minimum_minutes": 15.0,
+    "maximum_minutes": 1440.0,
+    "mean_minutes": 727.5,
+    "median_minutes": 727.5,
+    "minimum_hours": 0.25,
+    "maximum_hours": 24.0,
+    "mean_hours": 12.125,
+    "median_hours": 12.125
+  },
+  "water_source_metrics": [
+    {
+      "water_selection_mode": "sonar_ready",
+      "water_source": "mqtt_sqlite:/app/data/sonar_history.sqlite3",
+      "forecast_runs": 816,
+      "matched_points": 76091,
+      "bias_m": 0.138773,
+      "mae_m": 0.212531,
+      "median_absolute_error_m": 0.1886,
+      "maximum_absolute_error_m": 1.0374,
+      "rmse_m": 0.262225,
+      "pearson_r": 0.973814,
+      "r_squared": 0.92806
+    }
+  ],
+  "risk_metrics": {
+    "completed_scored_runs": 769,
+    "exact_accuracy": 1.0,
+    "within_one_level_accuracy": 1.0,
+    "warning_false_alarms": 0,
+    "warning_misses": 0
+  },
+  "chart_warning": null
+}

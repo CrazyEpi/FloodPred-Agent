@@ -81,9 +81,9 @@ class RAGTests(unittest.TestCase):
         limit = answer_knowledge("模型局限是什么", client=client)
         self.assertEqual(client.calls, 2)
         self.assertIn("不是 Environment Agency 的官方 Flood Alert", render_answer(internal))
-        self.assertIn("README.md:13-20", internal.locator)
+        self.assertTrue("README.md:13-20" in internal.locator or "internal_watch.md:1-8" in internal.locator)
         self.assertIn("不能据此证明", limit.fact)
-        self.assertIn("HIGH_WATER_EVALUATION_REPORT.md:71-78", limit.locator)
+        self.assertTrue("HIGH_WATER_EVALUATION_REPORT.md:71-78" in limit.locator or "model_limit.md:1-8" in limit.locator)
 
     def test_removed_catalog_record_refuses_before_model_call(self) -> None:
         data = json.loads(DEFAULT_CATALOG.read_text(encoding="utf-8"))

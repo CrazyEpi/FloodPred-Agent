@@ -9,14 +9,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CATALOG = ROOT / "knowledge" / "catalog.json"
-SOURCE_TYPES = frozenset({"internal_project", "evaluation_report", "official_public_guidance"})
+_SOURCE_CATALOG = ROOT / "knowledge" / "catalog.json"
+_DEMO_CATALOG = ROOT / "demo_data" / "knowledge" / "catalog.json"
+_DATA_MODE = os.environ.get("FLOODPRED_DATA_MODE", "")
+DEFAULT_CATALOG = _DEMO_CATALOG if _DATA_MODE == "demo" or not (ROOT / "backup" / "source_snapshot_2026-09-29").is_dir() else _SOURCE_CATALOG
+THESIS_CATALOG = ROOT / "knowledge" / "thesis_catalog.json"
+RULES_CATALOG = ROOT / "knowledge" / "rules_catalog.json"
+SOURCE_TYPES = frozenset({"internal_project", "evaluation_report", "official_public_guidance", "thesis"})
 
 
 class KnowledgeError(Exception):
@@ -64,12 +70,26 @@ def _source_evidence(record: dict[str, Any], root: Path) -> tuple[str, str | Non
     if not 1 <= start <= end <= len(lines):
         raise SourceIntegrityError(f"Invalid line span: {ref}:{start}-{end}")
     excerpt = "\n".join(lines[start - 1:end])
+    if record["source_type"] == "thesis":
+        origin = ROOT.parent / "Dissertation" / record["origin_filename"]
+        if origin.is_file() and hashlib.sha256(origin.read_bytes()).hexdigest() != record["origin_sha256"]:
+            raise SourceIntegrityError("Source dissertation PDF hash changed; thesis excerpt refused")
+        pages = ", ".join(str(page) for page in record["pdf_pages"])
+        return f"{record['origin_filename']} PDF文件页 {pages} | 摘录 {path}:{start}-{end} § {record['section']}", excerpt
     return f"{path}:{start}-{end} § {record['section']}", excerpt
 
 
 def _load(catalog: Path) -> list[dict[str, Any]]:
     data = json.loads(catalog.read_text(encoding="utf-8"))
-    records = data["records"]
+    records = list(data["records"])
+    if catalog.resolve() == DEFAULT_CATALOG.resolve():
+        rules = json.loads(RULES_CATALOG.read_text(encoding="utf-8"))["records"]
+        if DEFAULT_CATALOG == _DEMO_CATALOG:
+            watch = next(item for item in records if item["concept"] == "internal_watch")
+            rules = [{**item, **{field: watch[field] for field in ("source_ref", "line_start", "line_end", "sha256")}} for item in rules]
+        records.extend(rules)
+        thesis_data = json.loads(THESIS_CATALOG.read_text(encoding="utf-8"))
+        records.extend({**item, "origin_filename": thesis_data["origin_filename"], "origin_sha256": thesis_data["origin_sha256"]} for item in thesis_data["records"])
     ids: set[str] = set()
     for item in records:
         if item["id"] in ids:
@@ -82,6 +102,8 @@ def _load(catalog: Path) -> list[dict[str, Any]]:
 
 def _inferred_type(question: str) -> str | None:
     q = _normal(question)
+    if any(token in q for token in ("论文", "毕业设计", "dissertation", "thesis")):
+        return "thesis"
     if any(token in q for token in ("项目内部", "内部watch", "项目阈值")):
         return "internal_project"
     if any(token in q for token in ("官方", "floodalert", "environmentagency")):

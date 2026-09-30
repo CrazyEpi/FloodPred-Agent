@@ -1,0 +1,20 @@
+{
+  "catalog_version": "internal-rules-2026-09-30",
+  "records": [
+    {
+      "id": "internal-warning-2026-09-30",
+      "concept": "internal_warning",
+      "source_type": "internal_project",
+      "status": "active",
+      "version": "source-snapshot-2026-09-29",
+      "title": "House Mill Cloud Flood Server README",
+      "section": "风险等级",
+      "source_ref": "backup/source_snapshot_2026-09-29/cloud_flood_server/README.md",
+      "line_start": 13,
+      "line_end": 20,
+      "sha256": "7cf36cd8079cfc831f35a48fde163759e654679cfae1ef528ab7f67d4dccd3cd",
+      "keywords": ["项目内部Warning", "内部Warning", "Warning", "4.43", "预警等级", "洪水线"],
+      "summary": "项目内部 Warning（level 2）以预测水位达到 4.43 m，或连续超过 4.43 m 达到 1 小时为条件；它不是 Environment Agency 发布的官方 Flood Warning。"
+    }
+  ]
+}

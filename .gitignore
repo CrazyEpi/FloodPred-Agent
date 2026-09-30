@@ -1,5 +1,7 @@
 .venv/
+.venv-d4/
 backup/
+logs/
 __pycache__/
 *.py[cod]
 .pytest_cache/

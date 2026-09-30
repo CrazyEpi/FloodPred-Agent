@@ -2,7 +2,7 @@
 
 ## Product sentence
 
-FloodOps Agent is a portfolio demonstration that replays what the House Mill
+FloodPred is a portfolio demonstration that replays what the House Mill
 forecast archive contained at a historical decision time, shows evidence and
 limitations, and later may answer source-backed knowledge questions.
 

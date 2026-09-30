@@ -9,7 +9,7 @@ from .router import UnsupportedRoute, run_query
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="FloodOps D6 explicit route demo")
+    parser = argparse.ArgumentParser(description="FloodPred historical replay and evidence query")
     parser.add_argument("--question", required=True)
     parser.add_argument("--as-of", help="UTC replay cutoff; required for prediction or historical water")
     parser.add_argument("--llm", action="store_true", help="Ask DeepSeek for a short document explanation")

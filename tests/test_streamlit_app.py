@@ -16,10 +16,10 @@ class StreamlitAppTests(unittest.TestCase):
         app = AppTest.from_file(str(APP_FILE)).run()
         self.assertFalse(app.exception)
         self.assertFalse(app.warning)
-        self.assertEqual(app.checkbox[0].label, "用 DeepSeek 为文档证据生成短解释")
+        self.assertEqual(app.checkbox[0].label, "让 DeepSeek 帮我理解问题和文档（可能产生少量 API 费用）")
         app.button[0].click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(len(app.tabs), 3)
+        self.assertEqual([tab.label for tab in app.tabs], ["回答", "证据从哪来", "运行细节"])
         self.assertEqual(app.metric[0].value, "3.7832 m")
         self.assertFalse(app.error)
 

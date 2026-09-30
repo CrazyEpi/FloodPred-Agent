@@ -1,2 +1,2 @@
-"""Read-only FloodOps historical replay utilities."""
+"""Read-only FloodPred historical replay utilities."""
 
