@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import unittest
 from unittest.mock import patch
+from io import BytesIO
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from app.rag import DeepSeekClient, IntentPlan, UnsupportedAnswer
-from app.router import UnsupportedRoute, run_query
+from app.router import UnsupportedRoute, plan_route, run_query, volunteer_fact
 
 
 AS_OF = "2026-08-03T01:48:00Z"
@@ -31,6 +35,67 @@ class FakePlanner:
 
 
 class PlannerTests(unittest.TestCase):
+    def test_caution_is_display_alias_and_routes_to_original_record(self):
+        plan = plan_route("项目内部 Caution 是什么")
+        self.assertEqual(plan.knowledge_concepts, ("internal_watch",))
+        result = run_query("项目内部 Caution 是什么", audit_log=None)
+        self.assertEqual(result.knowledge[0].citation_id, "internal-watch-2026-09-29")
+        self.assertIn("Watch", result.knowledge[0].fact)
+        self.assertIn("Caution", volunteer_fact(result.knowledge[0].fact))
+
+    def test_official_guidance_is_separate_static_knowledge_route(self):
+        result = run_query("官方 Flood Alert 是什么", audit_log=None)
+        self.assertEqual(result.plan.knowledge_concepts, ("official_flood_alert",))
+        self.assertEqual(result.knowledge[0].source_type, "official_public_guidance")
+        self.assertIn("www.gov.uk", result.knowledge[0].locator)
+        with self.assertRaises(UnsupportedRoute):
+            run_query("现在的官方 Flood Alert 是什么", audit_log=None)
+
+    def test_reasoning_content_is_kept_for_debug_only(self):
+        client = DeepSeekClient(api_key="test-only-key")
+        response = {"choices": [{"finish_reason": "stop", "message": {
+            "content": '{"mode":"greeting","routes":[],"concepts":[],"evaluation_scope":null}',
+            "reasoning_content": "先判断是否只是打招呼。",
+        }}]}
+        with patch("app.rag.urlopen") as mocked:
+            mocked.return_value.__enter__.return_value = BytesIO(json.dumps(response).encode("utf-8"))
+            plan = client.plan("你好", ())
+        self.assertEqual(plan.mode, "greeting")
+        self.assertEqual(client.reasoning_traces, [{"stage": "问题规划", "content": "先判断是否只是打招呼。"}])
+        payload = json.loads(mocked.call_args.args[0].data)
+        self.assertEqual(payload["thinking"], {"type": "enabled"})
+        self.assertEqual(payload["reasoning_effort"], "low")
+
+        class ReasonedFake(FakePlanner):
+            def __init__(self):
+                super().__init__(IntentPlan("greeting"))
+                self.reasoning_traces = []
+
+            def plan(self, question, allowed_concepts):
+                self.reasoning_traces.append({"stage": "问题规划", "content": "仅供调试的中间文字"})
+                return self.result
+
+        with TemporaryDirectory() as directory:
+            log = Path(directory) / "requests.jsonl"
+            result = run_query("你好", use_llm=True, client=ReasonedFake(), audit_log=log)
+            self.assertEqual(result.reasoning_traces[0]["stage"], "问题规划")
+            self.assertNotIn("仅供调试", log.read_text(encoding="utf-8"))
+
+    def test_thinking_disabled_keeps_deepseek_but_omits_reasoning(self):
+        client = DeepSeekClient(api_key="test-only-key", thinking_enabled=False)
+        response = {"choices": [{"finish_reason": "stop", "message": {
+            "content": '{"mode":"greeting","routes":[],"concepts":[],"evaluation_scope":null}',
+            "reasoning_content": "即使服务返回，也不应展示",
+        }}]}
+        with patch("app.rag.urlopen") as mocked:
+            mocked.return_value.__enter__.return_value = BytesIO(json.dumps(response).encode("utf-8"))
+            plan = client.plan("你好", ())
+        self.assertEqual(plan.mode, "greeting")
+        payload = json.loads(mocked.call_args.args[0].data)
+        self.assertEqual(payload["thinking"], {"type": "disabled"})
+        self.assertNotIn("reasoning_effort", payload)
+        self.assertEqual(client.reasoning_traces, [])
+
     def test_peak_mae_relation_uses_both_verified_sources(self):
         fake = FakePlanner(IntentPlan("project", ("archived_forecast", "evaluation_metrics"), (), "overall"))
         result = run_query("你好，预测峰值和mae的联系是什么", as_of_utc=AS_OF, use_llm=True, client=fake, audit_log=None)

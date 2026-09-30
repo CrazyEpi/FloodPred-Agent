@@ -87,7 +87,7 @@ def _checked_plan(raw: str, question: str, allowed_concepts: tuple[str, ...]) ->
             "evaluation_metrics": ("mae", "误差", "偏差", "评估", "准确", "准不准", "模型表现"),
         }
         steps = tuple(item for item in steps if any(cue in q for cue in route_cues[item]))
-        thesis_cues = ("论文", "毕业设计", "thesis", "dissertation", "离线", "部署期", "线上", "patchtst", "caution", "快速上涨", "快速涨水")
+        thesis_cues = ("论文", "毕业设计", "thesis", "dissertation", "离线", "部署期", "线上", "patchtst", "快速上涨", "快速涨水")
         if not any(cue in q for cue in thesis_cues):
             topics = tuple(item for item in topics if not item.startswith("thesis_"))
         if not any(cue in q for cue in ("官方", "flood alert", "floodalert", "environment agency")):
@@ -161,14 +161,17 @@ class GroundedAnswer:
 
 
 class DeepSeekClient:
-    def __init__(self, api_key: str | None = None, model: str = DEFAULT_MODEL):
+    def __init__(self, api_key: str | None = None, model: str = DEFAULT_MODEL, *, thinking_enabled: bool = True):
         self.api_key = api_key if api_key is not None else _configured_key()
         self.model = model
+        self.thinking_enabled = thinking_enabled
+        # Ephemeral per-request diagnostics; the router never writes these to audit logs.
+        self.reasoning_traces: list[dict[str, str]] = []
 
     def plan(self, question: str, allowed_concepts: tuple[str, ...]) -> IntentPlan:
         """Propose a small, auditable plan; the router still owns all tool calls."""
         descriptions = {
-            "internal_watch": "项目服务端的内部 Watch 等级",
+            "internal_watch": "界面统一称 Caution 的内部等级；服务端原文称 Watch",
             "internal_warning": "项目服务端的内部 Warning 等级",
             "highwater_evaluation_limit": "部署期高水位评估的限制",
             "official_flood_alert": "英国官方 Flood Alert 的静态定义",
@@ -192,6 +195,7 @@ class DeepSeekClient:
                 "evaluation_metrics 的 evaluation_scope 必须是 overall 或 high_water_2m；其余为 null。"
                 "每项 route/concept 都附用户原文中至少两个字的 matched_phrase。"
                 "不要因为提到了‘预测’就自动取峰值；不要把内部等级当作官方警报。"
+                "用户说 Caution 时，可选 internal_watch；除非明确问论文，不要顺带选论文主题。"
                 "纯闲聊或无法确定的项目问题不选工具。"
                 "只输出 JSON 对象：{\"mode\":\"project|greeting|general|clarify\","
                 "\"routes\":[{\"id\":\"...\",\"matched_phrase\":\"...\"}],"
@@ -202,7 +206,7 @@ class DeepSeekClient:
                 "question": question,
                 "allowed_concepts": [{"id": item, "description": descriptions[item]} for item in allowed_concepts],
             }, ensure_ascii=False)},
-        ], max_tokens=650)
+        ], max_tokens=4500, thinking=self.thinking_enabled, stage="问题规划")
         return _checked_plan(raw, question, allowed_concepts)
 
     def reply(self, question: str, mode: Literal["greeting", "general", "clarify"]) -> str:
@@ -220,7 +224,7 @@ class DeepSeekClient:
                 "涉及当前洪水风险时请说明本应用无实时数据。"
             )},
             {"role": "user", "content": json.dumps({"mode": mode, "question": question}, ensure_ascii=False)},
-        ], max_tokens=700)
+        ], max_tokens=3000, thinking=self.thinking_enabled, stage="普通对话")
         return _checked_free_reply(raw)
 
     def synthesize(self, question: str, evidence: list[dict[str, str]]) -> str:
@@ -235,13 +239,15 @@ class DeepSeekClient:
                 "每条证据都要覆盖，所有 id 放入 citations。"
                 "预测峰值是某一次未来水位预测的最高点；MAE 是一批匹配预测点的平均绝对误差。"
                 "首次提到 MAE 时，尽量补一句‘这批预测平均差了多少米’。"
+                "面向用户统一使用 Caution；服务端原文使用 Watch，不能谎称原文写了 Caution。"
+                "只有用户追问命名或查看证据时，再解释这个显示别名。"
                 "如果同时给出两者，要解释它们是不同层级，不能把批次 MAE 当作这次峰值误差，"
                 "不能凭 MAE 推断洪水事件检出率。事后评估不能说成回放时刻已经知道。"
                 "不能声称历史回放是实时信息、内部等级是官方警报，也不提供现场行动指令。"
                 "只输出 JSON：{\"answer\":\"...\",\"citations\":[\"所有证据ID\"]}。"
             )},
             {"role": "user", "content": json.dumps({"question": question, "evidence": evidence}, ensure_ascii=False)},
-        ], max_tokens=1600)
+        ], max_tokens=6500, thinking=self.thinking_enabled, stage="证据整理")
         return _checked_grounded_reply(raw, evidence)
 
     def complete(self, *, question: str, evidence: Hit) -> str:
@@ -278,9 +284,9 @@ class DeepSeekClient:
     def classify(self, question: str, allowed_concepts: tuple[str, ...]) -> tuple[str, ...]:
         """Return only allowlisted knowledge hints; never answer or execute the query."""
         descriptions = {
-            "internal_watch": "服务端项目内部 Watch 等级和 4.20 m 规则",
+            "internal_watch": "界面 Caution 等级（服务端原文 Watch）和 4.20 m 规则",
             "internal_warning": "服务端项目内部 Warning 等级和 4.43 m 规则",
-            "highwater_evaluation_limit": "部署期高水位报告没有真实 Watch 越线样本",
+            "highwater_evaluation_limit": "部署期高水位报告没有真实 Caution 越线样本",
             "official_flood_alert": "英国 Environment Agency 官方 Flood Alert 的静态定义",
             "thesis_forecast_design": "论文的七天输入和未来 24 小时预测方法",
             "thesis_risk_terms": "论文 Caution/Warning/Severe 命名与阈值",
@@ -318,11 +324,13 @@ class DeepSeekClient:
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
             raise UnsupportedAnswer("DeepSeek 的主题识别输出未通过白名单／原文片段校验。") from exc
 
-    def _call(self, messages: list[dict[str, str]], *, max_tokens: int) -> str:
+    def _call(self, messages: list[dict[str, str]], *, max_tokens: int, thinking: bool = False, stage: str = "") -> str:
         if not self.api_key:
             raise LLMNotConfigured("未配置 DeepSeek key；可在本地 .env 设置 DEEPSEEK_API_KEY。")
-        payload = {"model": self.model, "messages": messages, "thinking": {"type": "disabled"},
+        payload = {"model": self.model, "messages": messages, "thinking": {"type": "enabled" if thinking else "disabled"},
                    "response_format": {"type": "json_object"}, "max_tokens": max_tokens, "stream": False}
+        if thinking:
+            payload["reasoning_effort"] = "low"
         request = Request(
             DEEPSEEK_URL,
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -333,7 +341,7 @@ class DeepSeekClient:
             method="POST",
         )
         try:
-            with urlopen(request, timeout=40) as response:
+            with urlopen(request, timeout=90 if thinking else 40) as response:
                 result = json.load(response)
         except HTTPError as exc:
             raise LLMRequestError(f"DeepSeek HTTP {exc.code}；未展示响应正文或密钥。") from exc
@@ -354,6 +362,9 @@ class DeepSeekClient:
             content = choice["message"]["content"]
             if not isinstance(content, str) or not content.strip():
                 raise ValueError("empty model content")
+            reasoning = choice["message"].get("reasoning_content")
+            if thinking and isinstance(reasoning, str) and reasoning.strip():
+                self.reasoning_traces.append({"stage": stage or "DeepSeek", "content": reasoning})
             return content
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise LLMRequestError("DeepSeek 响应缺少完整文本。") from exc
@@ -381,7 +392,7 @@ def _intent(question: str) -> tuple[str, str, str]:
     q = re.sub(r"\s+", "", question.casefold())
     if "warning" in q and any(token in q for token in ("项目", "内部", "规则", "阈值")):
         return "internal_warning", "项目内部Warning", "internal_warning"
-    if "watch" in q and any(token in q for token in ("项目", "内部", "规则", "阈值")):
+    if any(token in q for token in ("watch", "caution")) and any(token in q for token in ("项目", "内部", "规则", "阈值")):
         return "internal_rule", "项目内部Watch", "internal_watch"
     if ("模型" in q and any(token in q for token in ("局限", "限制"))) or any(
         token in q for token in ("洪水检出", "watch召回", "召回率")
@@ -414,7 +425,7 @@ def _validated_explanation(raw: str, evidence: Hit, intent: str) -> str:
     if any(token in explanation for token in ("应立即", "必须疏散", "官方已发布", "等于官方", "现场SOP")):
         raise UnsupportedAnswer("模型解释包含未经证实的行动或官方状态；已拒答。")
     if intent in ("internal_rule", "internal_watch") and not (
-        "watch" in explanation.casefold() and "4.20" in explanation and "4.43" in explanation
+        any(token in explanation.casefold() for token in ("watch", "caution")) and "4.20" in explanation and "4.43" in explanation
     ):
         raise UnsupportedAnswer("内部规则的关键阈值未被完整解释；已拒答。")
     if intent == "internal_warning" and not (

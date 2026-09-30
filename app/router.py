@@ -62,6 +62,7 @@ class QueryResult:
     knowledge: list[KnowledgeItem] = field(default_factory=list)
     response_mode: Literal["project", "greeting", "general", "clarify"] = "project"
     answer_text: str | None = None
+    reasoning_traces: list[dict[str, str]] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     trace: list[dict[str, str]] = field(default_factory=list)
     audit_status: str = "pending"
@@ -75,11 +76,12 @@ def _friendly_utc(value: str) -> str:
     return f"{timestamp.year}年{timestamp.month}月{timestamp.day}日 {timestamp:%H:%M}（UTC）"
 
 
-def _volunteer_fact(value: str) -> str:
-    """Presentation-only wording; the original verified fact stays in KnowledgeItem."""
+def volunteer_fact(value: str) -> str:
+    """Display alias only; never alter the verified record or its source."""
     return (value.replace("（level 1）", "（第一档）")
                  .replace("（level 2）", "（第二档）")
                  .replace("（level 3）", "（第三档）")
+                 .replace("Watch", "Caution")
                  .replace("No risk", "无风险"))
 
 
@@ -159,7 +161,7 @@ def plan_route(question: str, *, semantic_concepts: tuple[str, ...] = ()) -> Rou
             concepts.append(concept)
 
     official = "官方" in q or "environmentagency" in q
-    if "watch" in q or "观察等级" in q:
+    if "watch" in q or "caution" in q or "观察等级" in q or "留意等级" in q:
         if not official or "项目" in q or "内部" in q:
             add("internal_watch")
     if "warning" in q or "警告等级" in q or "洪水线" in q:
@@ -167,7 +169,7 @@ def plan_route(question: str, *, semantic_concepts: tuple[str, ...] = ()) -> Rou
             add("internal_warning")
     if "floodalert" in q and (official or any(word in q for word in ("是什么", "含义", "定义"))):
         add("official_flood_alert")
-    if "caution" in q or ("论文" in q and any(word in q for word in ("风险", "等级", "warning", "watch", "阈值"))):
+    if "论文" in q and any(word in q for word in ("caution", "风险", "等级", "warning", "watch", "阈值")):
         add("thesis_risk_terms")
     if "模型" in q and any(word in q for word in ("局限", "限制", "不足", "短板")):
         add("highwater_evaluation_limit")
@@ -211,6 +213,7 @@ def run_query(
     *,
     as_of_utc: str | None = None,
     use_llm: bool = False,
+    thinking_enabled: bool | None = None,
     client: ChatClient | None = None,
     forecast_db: Path = DEFAULT_DB,
     sonar_db: Path = DEFAULT_SONAR_DB,
@@ -229,7 +232,12 @@ def run_query(
     semantic_concepts: tuple[str, ...] = ()
     routing_note: str | None = None
     proposed: IntentPlan | None = None
-    provider = client if client is not None else (DeepSeekClient() if use_llm else None)
+    provider = client if client is not None else (DeepSeekClient(thinking_enabled=thinking_enabled is not False) if use_llm else None)
+    if isinstance(provider, DeepSeekClient) and thinking_enabled is not None:
+        provider.thinking_enabled = thinking_enabled
+    reasoning_store = getattr(provider, "reasoning_traces", None)
+    if isinstance(reasoning_store, list):
+        reasoning_store.clear()
     if use_llm:
         planner = getattr(provider, "plan", None)
         classify = getattr(provider, "classify", None)
@@ -251,7 +259,7 @@ def run_query(
     except UnsupportedRoute:
         pass
     if proposed and proposed.mode in ("greeting", "general") and local_plan is None:
-        project_cues = ("floodpred", "洪水", "水位", "预警", "警报", "预测", "mae", "模型", "项目", "论文", "watch", "warning", "patchtst")
+        project_cues = ("floodpred", "洪水", "水位", "预警", "警报", "预测", "mae", "模型", "项目", "论文", "watch", "caution", "warning", "patchtst")
         if any(cue in question.casefold() for cue in project_cues):
             proposed = IntentPlan("clarify")
     try:
@@ -290,7 +298,7 @@ def run_query(
             if step == "archived_forecast":
                 result.forecast = archived_forecast_tool(ForecastArgs(as_of_utc=as_of_utc), forecast_db)
                 result.trace.append({"step": step, "status": "ok", "run_id": result.forecast.run_id, "as_of_utc": result.forecast.as_of_utc, "generated_utc": result.forecast.forecast_generated_utc, "stored_at_utc": result.forecast.forecast_stored_at_utc})
-                evidence_bundle.append({"id": f"forecast:{result.forecast.run_id}", "kind": "historical_forecast", "fact": f"回放时间 {_friendly_utc(result.forecast.as_of_utc)}；当时预测未来最高水位 {result.forecast.predicted_peak_m:.4f} m，预计到达时间 {_friendly_utc(result.forecast.predicted_peak_utc)}；内部等级 {_volunteer_fact(result.forecast.internal_risk_label)}。这是当时的预测，不是实测。", "source": f"归档预测 run_id {result.forecast.run_id}"})
+                evidence_bundle.append({"id": f"forecast:{result.forecast.run_id}", "kind": "historical_forecast", "fact": f"回放时间 {_friendly_utc(result.forecast.as_of_utc)}；当时预测未来最高水位 {result.forecast.predicted_peak_m:.4f} m，预计到达时间 {_friendly_utc(result.forecast.predicted_peak_utc)}；内部等级 {volunteer_fact(result.forecast.internal_risk_label)}。这是当时的预测，不是实测。", "source": f"归档预测 run_id {result.forecast.run_id}"})
             elif step == "historical_water":
                 result.water = historical_water_tool(WaterArgs(as_of_utc=as_of_utc), sonar_db)
                 result.trace.append({"step": step, "status": "ok", "observed_utc": result.water.observed_utc if result.water else "none", "stored_at_utc": result.water.stored_at_utc if result.water else "none"})
@@ -299,7 +307,7 @@ def run_query(
             elif step == "evaluation_metrics":
                 result.evaluation = evaluation_metrics_tool(EvaluationArgs(scope=plan.evaluation_scope))
                 result.trace.append({"step": step, "status": "ok", "scope": result.evaluation.scope, "version_utc": result.evaluation.generated_utc, "source_sha256": result.evaluation.source_sha256})
-                evidence_bundle.append({"id": f"evaluation:{result.evaluation.scope}:{result.evaluation.source_sha256[:12]}", "kind": "hindsight_evaluation", "fact": f"事后批次评估 MAE {result.evaluation.mae_m:.6f} {result.evaluation.unit}；样本范围：{result.evaluation.sample_scope}；匹配预测目标点 {result.evaluation.matched_prediction_points}；版本生成时间 {_friendly_utc(result.evaluation.generated_utc)}。MAE 是点级平均绝对误差，通俗地说，就是把这一批预测和实测逐个比较后平均差了多少米；不是某一次预测峰值的误差，也不是洪水事件检出率。", "source": "已校验哈希的只读评估快照"})
+                evidence_bundle.append({"id": f"evaluation:{result.evaluation.scope}:{result.evaluation.source_sha256[:12]}", "kind": "hindsight_evaluation", "fact": f"事后批次评估 MAE {result.evaluation.mae_m:.6f} {result.evaluation.unit}；样本范围：{volunteer_fact(result.evaluation.sample_scope)}；匹配预测目标点 {result.evaluation.matched_prediction_points}；版本生成时间 {_friendly_utc(result.evaluation.generated_utc)}。MAE 是点级平均绝对误差，通俗地说，就是把这一批预测和实测逐个比较后平均差了多少米；不是某一次预测峰值的误差，也不是洪水事件检出率。", "source": "已校验哈希的只读评估快照"})
             else:
                 for concept in plan.knowledge_concepts:
                     query, source_type = _QUERIES[concept]
@@ -325,7 +333,8 @@ def run_query(
                         locator=hit.locator,
                         explanation=explanation,
                     ))
-                    evidence_bundle.append({"id": hit.record["id"], "kind": hit.record["source_type"], "fact": _volunteer_fact(hit.record["summary"]), "source": f"{hit.record['title']} § {hit.record['section']}"})
+                    source_note = "；原始术语 Watch，界面别名 Caution" if "Watch" in hit.record["summary"] else ""
+                    evidence_bundle.append({"id": hit.record["id"], "kind": hit.record["source_type"], "fact": volunteer_fact(hit.record["summary"]), "source": f"{hit.record['title']} § {hit.record['section']}{source_note}"})
                     result.trace.append({"step": step, "status": "ok", "citation_id": hit.record["id"], "source_type": hit.record["source_type"], "source_locator": hit.locator, "version": hit.record["version"], "llm_status": "accepted" if explanation else ("link_only" if use_llm and not hit.excerpt else ("failed" if use_llm else "disabled"))})
         except (OSError, ValueError, KeyError, TypeError) as exc:
             result.errors.append(f"{step}：{exc}")
@@ -342,6 +351,8 @@ def run_query(
         except RAGError as exc:
             result.errors.append(f"DeepSeek 没能把证据整理成回答：{exc}；下面仍保留查到的原始结果。")
             result.trace.append({"step": "grounded_reply", "status": "error"})
+    if isinstance(reasoning_store, list):
+        result.reasoning_traces = list(reasoning_store)
     if audit_log is not None:
         try:
             _write_audit({"request_id": request_id, "at_utc": timestamp, "question_sha256": hashlib.sha256(question.encode("utf-8")).hexdigest(), "as_of_utc": as_of_utc, "route": plan.steps, "status": "partial_or_error" if result.errors else "ok", "run_id": result.forecast.run_id if result.forecast else None, "citation_ids": [item.citation_id for item in result.knowledge], "trace": result.trace, "error_count": len(result.errors)}, audit_log)

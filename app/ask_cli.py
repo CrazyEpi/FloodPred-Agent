@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .router import UnsupportedRoute, run_query
+from .router import UnsupportedRoute, run_query, volunteer_fact
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -32,12 +32,12 @@ def main(argv: list[str] | None = None) -> int:
     if result.evaluation:
         metric = result.evaluation
         print(f"{metric.scope} MAE：{metric.mae_m:.6f} {metric.unit}；评估版本：{metric.generated_utc}")
-        print(f"样本范围：{metric.sample_scope}；匹配预测目标点：{metric.matched_prediction_points}")
+        print(f"样本范围：{volunteer_fact(metric.sample_scope)}；匹配预测目标点：{metric.matched_prediction_points}")
         print(f"评估来源：{metric.source_locator}（事后评估，不是当时可用事实）")
     for item in result.knowledge:
-        print(f"定义／局限：{item.fact} [{item.citation_id}]")
+        print(f"定义／局限：{volunteer_fact(item.fact)} [{item.citation_id}]")
         if item.explanation:
-            print(f"模型解释：{item.explanation}")
+            print(f"模型解释：{volunteer_fact(item.explanation)}")
         print(f"来源：{item.locator}")
     for error in result.errors:
         print(f"错误：{error}", file=sys.stderr)
