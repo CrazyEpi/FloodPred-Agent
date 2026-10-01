@@ -24,7 +24,7 @@ cd C:\UCL\CASA0016\FloodPred-Agent
 .\.venv-d4\Scripts\python.exe -m app.knowledge_cli --question "项目内部 Watch 是什么" --source-type internal_project --checked-on-or-before 2026-09-29 --semantic
 ```
 
-第一条应显示 `rounds: 2`、两条来源（内部规则和 GOV.UK 静态定义），以及每轮 trace。第二条故意把工具预算压到 1，应看到 `stop_reason: tool_limit`、`answer_status: partial_verified`、非空 `answer` 和空 `fallback`；它只陈述已查到的峰值，明确说 MAE 仍缺失。第三条测试改写问法的语义候选，不代表已证实问题答案。页面的“资料核对截止日期”只筛选文档快照，不会改变预测回放时间。加 `--llm` 才会调用 DeepSeek；`--thinking` 可与它同时使用。新机器可从 [.env.example](.env.example) 复制本地配置模板，`.env` 被 Git 忽略。
+第一条应显示 `rounds: 2`、两条来源（内部规则和 GOV.UK 静态定义），以及每轮 trace。第二条故意把工具预算压到 1，应看到 `stop_reason: tool_limit`、`answer_status: partial_verified`、非空 `answer` 和空 `fallback`；它只陈述已查到的峰值，明确说 MAE 仍缺失。第三条测试改写问法的语义候选，不代表已证实问题答案。资料核对日期过滤仅保留在命令行／后端，不占用网页提问表单；它与预测回放时间是不同概念。加 `--llm` 才会调用 DeepSeek；`--thinking` 可与它同时使用。新机器可从 [.env.example](.env.example) 复制本地配置模板，`.env` 被 Git 忽略。
 
 在另一台机器上，只需 Python 3.12+ 和本仓库中的 `demo_data/`，**无需云服务器**：
 

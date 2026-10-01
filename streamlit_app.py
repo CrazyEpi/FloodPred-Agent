@@ -131,7 +131,6 @@ def show_result(result: QueryResult) -> None:
             "audit_status": result.audit_status,
             "question": result.question,
             "as_of_utc": result.as_of_utc,
-            "knowledge_checked_on_or_before": result.knowledge_checked_on_or_before,
             "route": result.plan.steps,
             "response_mode": result.response_mode,
             "knowledge_concepts": result.plan.knowledge_concepts,
@@ -164,8 +163,6 @@ with st.form("ask_form"):
         help="可以像聊天一样问。例如：‘你好，预测最高水位和平均误差有什么关系？’",
     )
     as_of_utc = st.text_input("历史回放时刻（UTC）", value="2026-08-03T01:48:00Z")
-    knowledge_cutoff = st.text_input("资料核对截止日期（可选，YYYY-MM-DD）", value="",
-                                    help="只筛选已在该日期前核对的文档快照；与历史预测回放时刻不是同一回事。")
     llm_column, thinking_column = st.columns(2)
     with llm_column:
         use_llm = st.checkbox("用 DeepSeek 理解和回答", value=bool(DeepSeekClient().api_key))
@@ -178,7 +175,6 @@ if submitted:
     try:
         query_runner = run_investigation if use_investigation else run_query
         output = query_runner(question, as_of_utc=as_of_utc,
-                              knowledge_checked_on_or_before=knowledge_cutoff.strip() or None,
                               use_llm=use_llm, thinking_enabled=use_thinking)
     except UnsupportedRoute as exc:
         st.error(str(exc))

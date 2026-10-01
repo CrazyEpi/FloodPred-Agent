@@ -18,6 +18,7 @@ class StreamlitAppTests(unittest.TestCase):
         app = AppTest.from_file(str(APP_FILE)).run()
         self.assertFalse(app.exception)
         self.assertFalse(app.warning)
+        self.assertEqual(len(app.text_input), 2)
         self.assertEqual(app.checkbox[0].label, "用 DeepSeek 理解和回答")
         self.assertEqual(app.checkbox[1].label, "开启 Thinking（显示思维链）")
         self.assertEqual(app.checkbox[2].label, "多步调查（最多 3 轮）")
