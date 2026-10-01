@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from app.archive import DEFAULT_DB
+from app.investigation import run_investigation
 from app.rag import DeepSeekClient
 from app.replay import DEFAULT_SONAR_DB
 from app.router import QueryResult, UnsupportedRoute, run_query, volunteer_fact
@@ -22,13 +23,22 @@ def show_result(result: QueryResult) -> None:
     if result.errors:
         for error in result.errors:
             st.error(error)
+    for warning in result.warnings:
+        st.warning(warning)
     result_tab, evidence_tab, debug_tab = st.tabs(["回答", "证据", "运行细节"])
 
     with result_tab:
+        if result.investigation_rounds:
+            st.caption(f"本次调查取证 {result.investigation_rounds} 轮、调用只读工具 {result.investigation_tool_calls} 次；每一步可在‘运行细节’查看。")
+        if result.fallback_text:
+            st.warning(result.fallback_text)
         if result.answer_text:
             if result.response_mode == "project":
                 st.write(result.answer_text)
-                st.caption("这段话由 DeepSeek 根据下方已核对的资料整理；重要数据请以原始卡片和可信来源为准")
+                if result.answer_status == "partial_verified":
+                    st.caption("这是根据已核验残余资料整理的局部结论，不是整个问题的完整答案；缺失部分没有推测或补写。")
+                else:
+                    st.caption("这段话由 DeepSeek 根据下方已核对的资料整理；重要数据请以原始卡片和可信来源为准")
             else:
                 st.write(result.answer_text)
                 if result.response_mode == "general":
@@ -102,6 +112,12 @@ def show_result(result: QueryResult) -> None:
                 st.write(f"**{item.title}** · `{item.source_type}`")
                 st.code(item.locator, language=None)
                 st.write(f"引用 ID：`{item.citation_id}`")
+                if item.version:
+                    st.write(f"资料版本：`{item.version}`")
+                if item.source_sha256:
+                    st.write(f"本地源文件 SHA-256：`{item.source_sha256}`")
+                if item.retrieval_methods:
+                    st.caption(f"检索方式：{', '.join(item.retrieval_methods)}。相似度只是候选排序，不是事实支持证明。")
                 st.write(f"来源目录的原始摘要：{item.fact}")
                 if "Watch" in item.fact:
                     st.caption("显示名称 Caution 对应此来源中的 Watch；源文件和引用 ID 保留原词，不能把别名当成原文。")
@@ -115,11 +131,19 @@ def show_result(result: QueryResult) -> None:
             "audit_status": result.audit_status,
             "question": result.question,
             "as_of_utc": result.as_of_utc,
+            "knowledge_checked_on_or_before": result.knowledge_checked_on_or_before,
             "route": result.plan.steps,
             "response_mode": result.response_mode,
             "knowledge_concepts": result.plan.knowledge_concepts,
             "evaluation_scope": result.plan.evaluation_scope,
             "tool_trace": result.trace,
+            "investigation_rounds": result.investigation_rounds,
+            "investigation_tool_calls": result.investigation_tool_calls,
+            "investigation_llm_calls": result.investigation_llm_calls,
+            "investigation_stop_reason": result.investigation_stop_reason,
+            "safe_fallback": result.fallback_text,
+            "answer_status": result.answer_status,
+            "warnings": result.warnings,
             "errors": result.errors,
         })
         if result.reasoning_traces:
@@ -140,16 +164,22 @@ with st.form("ask_form"):
         help="可以像聊天一样问。例如：‘你好，预测最高水位和平均误差有什么关系？’",
     )
     as_of_utc = st.text_input("历史回放时刻（UTC）", value="2026-08-03T01:48:00Z")
+    knowledge_cutoff = st.text_input("资料核对截止日期（可选，YYYY-MM-DD）", value="",
+                                    help="只筛选已在该日期前核对的文档快照；与历史预测回放时刻不是同一回事。")
     llm_column, thinking_column = st.columns(2)
     with llm_column:
         use_llm = st.checkbox("用 DeepSeek 理解和回答", value=bool(DeepSeekClient().api_key))
     with thinking_column:
         use_thinking = st.checkbox("开启 Thinking（显示思维链）", value=True, help="仅在使用 DeepSeek 时生效；关闭后仍可提问，但不会请求或显示思维链。")
+    use_investigation = st.checkbox("多步调查（最多 3 轮）", value=True, help="先取证、检查是否缺少关键来源，再在只读白名单内补查；最多 8 次工具调用和 60 秒。取消可使用原来的单轮问答。")
     submitted = st.form_submit_button("查看结果", type="primary")
 
 if submitted:
     try:
-        output = run_query(question, as_of_utc=as_of_utc, use_llm=use_llm, thinking_enabled=use_thinking)
+        query_runner = run_investigation if use_investigation else run_query
+        output = query_runner(question, as_of_utc=as_of_utc,
+                              knowledge_checked_on_or_before=knowledge_cutoff.strip() or None,
+                              use_llm=use_llm, thinking_enabled=use_thinking)
     except UnsupportedRoute as exc:
         st.error(str(exc))
     else:
@@ -169,5 +199,6 @@ with st.expander("可以试试这些问题"):
 - `House Mill 是什么？为什么会受潮汐影响？`：查看建筑档案和历史研究背景。
 - `Duncan Wilson 的旧传感器怎么布置？论文中的 136 次与 42 次有什么区别？`：分别查看旧项目仓库与论文；不代表设备今天在线。
 - `旧 House Mill 监测和 FloodPred 是什么关系？`：查看毕业论文中的承接说明。
+- `项目内部 Caution 和英国官方预警有什么区别？`：多步调查会在内部规则之后补查官方静态定义，不会查询实时警报。
 - `周末适合读什么书？`：普通聊天，不会冒充项目事实。"""
     )

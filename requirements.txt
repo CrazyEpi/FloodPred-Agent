@@ -1,3 +1,4 @@
 # One maintained Python environment (.venv-d4) for the complete D1-D10 demo.
 pydantic==2.13.5
 streamlit==1.64.0
+numpy==2.5.3
