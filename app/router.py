@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from difflib import SequenceMatcher
 import hashlib
 import json
 from pathlib import Path
@@ -123,6 +124,10 @@ def _reject_unsafe_intent(question: str) -> None:
         cue in q for cue in ("历史", "当时", "回放", "过去", "事后")
     ):
         raise UnsupportedRoute("这里没有实时水位或当前风险数据，只能回看历史记录；请不要把回放结果当作现在的情况。")
+    if (any(word in q for word in ("现在", "目前", "当前", "今天", "如今", "还在", "仍在"))
+        and any(word in q for word in ("传感器", "感应器", "水位仪", "声纳", "sonar", "探头", "旧设备"))
+        and any(word in q for word in ("布置", "安装", "在哪", "放哪", "位置", "运行", "在线", "还用", "还在", "仍在"))):
+        raise UnsupportedRoute("现有资料只记录早期传感器的历史布置，不能确认设备现在的位置或运行状态。可以问‘旧传感器当时怎么布置的？’")
 
 
 def _write_audit(record: dict[str, object], path: Path) -> None:
@@ -143,7 +148,35 @@ _QUERIES = {
     "thesis_live_limit": ("线上洪水检出", "thesis"),
     "thesis_rapid_rise": ("快速上涨", "thesis"),
     "thesis_model_design": ("PatchTST改进", "thesis"),
+    "housemill_heritage": ("House Mill是什么", "heritage_public"),
+    "housemill_flood_context": ("House Mill洪水背景", "research_paper"),
+    "housemill_old_sensor": ("House Mill旧传感器", "prior_project"),
+    "housemill_study_findings": ("House Mill研究发现", "research_paper"),
+    "housemill_volunteer_need": ("志愿者需要什么信息", "research_paper"),
+    "housemill_project_connection": ("旧项目和FloodPred关系", "thesis"),
 }
+
+
+def _old_sensor_placement_query(question: str) -> bool:
+    """Recognize conversational references, while requiring device + placement context."""
+    q = re.sub(r"\s+", "", question.casefold())
+    explicit = ("旧传感器", "旧声纳", "旧监测", "早期监测", "sonarbox", "树莓派传感器")
+    if any(word in q for word in explicit):
+        return True
+    device = ("传感器", "感应器", "水位仪", "声纳", "sonar", "探头", "测水设备", "水位设备", "设备", "仪器")
+    placement = ("布置", "安装", "怎么装", "放哪", "放在", "放到", "摆放", "位置", "架设", "部署", "装在哪", "放哪里", "在哪儿")
+    context = ("旧", "以前", "之前", "当时", "早期", "原来", "先前", "duncan", "wilson", "housemill", "三磨坊")
+    if any(word in q for word in placement):
+        for alias in ("旧传感器", "旧声纳", "水位仪", "声纳探头"):
+            if len(q) >= len(alias) and any(
+                q[index] == alias[0]
+                and SequenceMatcher(None, q[index:index + len(alias)], alias).ratio() >= 0.75
+                for index in range(len(q) - len(alias) + 1)
+            ):
+                return True
+    specific_device = any(word in q for word in device[:-2])
+    return (specific_device and any(word in q for word in placement)
+            or any(word in q for word in context) and any(word in q for word in device) and any(word in q for word in placement))
 
 
 def plan_route(question: str, *, semantic_concepts: tuple[str, ...] = ()) -> RoutePlan:
@@ -186,6 +219,19 @@ def plan_route(question: str, *, semantic_concepts: tuple[str, ...] = ()) -> Rou
         add("thesis_model_design")
     if any(word in q for word in ("召回率", "洪水检出")) and not any(concept in concepts for concept in ("thesis_offline_events", "thesis_live_limit")):
         add("highwater_evaluation_limit")
+    housemill = any(word in q for word in ("housemill", "三磨坊"))
+    if housemill and "是什么关系" not in q and any(word in q for word in ("是什么", "背景", "历史", "哪里", "什么地方", "建于", "建筑")):
+        add("housemill_heritage")
+    if housemill and any(word in q for word in ("洪水背景", "为何淹水", "为什么淹水", "进水", "潮汐", "木梁", "地板", "为什么要监测")):
+        add("housemill_flood_context")
+    if _old_sensor_placement_query(question) or (housemill and any(word in q for word in ("传感器", "声纳", "sonar", "duncanwilson"))):
+        add("housemill_old_sensor")
+    if any(word in q for word in ("136次", "42次", "136和42", "136与42", "旧监测结果", "旧研究发现", "53分钟")) or (housemill and "研究发现" in q):
+        add("housemill_study_findings")
+    if any(word in q for word in ("志愿者需要什么", "旧界面", "触水时长")) or (housemill and "志愿者" in q):
+        add("housemill_volunteer_need")
+    if any(word in q for word in ("旧项目和floodpred", "housemill与floodpred", "旧传感器与预测", "旧系统和floodpred", "如何接续旧系统")) or (housemill and "floodpred" in q and any(word in q for word in ("旧", "监测", "关系", "关联", "承接"))):
+        add("housemill_project_connection")
     for concept in semantic_concepts:
         if concept in _QUERIES:
             add(concept)

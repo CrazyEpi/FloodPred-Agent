@@ -1,0 +1,3 @@
+# How the earlier monitoring and FloodPred relate (curated paraphrase)
+Haoyu Hu's FloodPred dissertation, PDF p. 5, states that its sonar data-acquisition system builds on the open-source House Mill monitoring implementation documented by Wilson and Zhang (2025). The earlier work focused on measuring and understanding water at the mill; the dissertation extends this into a forecast pipeline with rainfall and tide inputs. This is a relationship between documented projects, not proof that the old equipment or today's cloud service is online.
+Source: Dissertaion_Floodpred_V3_HaoyuHu.pdf, PDF pp. 3, 5; original SHA-256 recorded in thesis_catalog.json.

@@ -1,0 +1,3 @@
+# Volunteer information needs in the earlier study (curated paraphrase)
+Wilson and Zhang (2025), PDF p. 5: discussions with House Mill stakeholders identified the duration of water touching timber as a useful measure. The paper notes that the older Grafana display is technical and argues for more understandable information for volunteers and visitors. It discusses prediction using weather and tide data as future work, not as a capability already delivered by the earlier sensor installation. This does not establish a House Mill emergency SOP.
+Source: CUPUM_HouseMill (4).pdf, PDF p. 5; original SHA-256 recorded in housemill_catalog.json.

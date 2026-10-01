@@ -92,6 +92,15 @@ def _checked_plan(raw: str, question: str, allowed_concepts: tuple[str, ...]) ->
             topics = tuple(item for item in topics if not item.startswith("thesis_"))
         if not any(cue in q for cue in ("官方", "flood alert", "floodalert", "environment agency")):
             topics = tuple(item for item in topics if item != "official_flood_alert")
+        background_cues = {
+            "housemill_heritage": ("house mill", "housemill", "三磨坊"),
+            "housemill_flood_context": ("house mill", "housemill", "三磨坊", "木梁", "潮汐"),
+            "housemill_old_sensor": ("旧传感器", "旧声纳", "旧监测", "sonar box", "树莓派", "duncan wilson"),
+            "housemill_study_findings": ("136", "42", "53分钟", "旧研究", "研究发现"),
+            "housemill_volunteer_need": ("志愿者", "旧界面", "触水时长"),
+            "housemill_project_connection": ("floodpred", "旧项目", "旧系统", "接续"),
+        }
+        topics = tuple(item for item in topics if item not in background_cues or any(cue in q for cue in background_cues[item]))
         if scope not in (None, "overall", "high_water_2m"):
             raise ValueError("invalid metric scope")
         if "evaluation_metrics" in steps:
@@ -181,6 +190,12 @@ class DeepSeekClient:
             "thesis_live_limit": "论文部署期没有真实越线洪水",
             "thesis_rapid_rise": "论文快速涨水时的滞后",
             "thesis_model_design": "论文 PatchTST 改进",
+            "housemill_heritage": "House Mill 的地点、建造年代和历史建筑身份",
+            "housemill_flood_context": "为什么潮汐和河水会影响 House Mill 的木结构",
+            "housemill_old_sensor": "Duncan Wilson 旧项目的声纳、树莓派和监测传输链路；不代表现在在线",
+            "housemill_study_findings": "Wilson 与 Zhang 论文中的历史水接触事件、136 与 42 的不同阈值",
+            "housemill_volunteer_need": "旧研究中志愿者的信息需求和旧界面局限",
+            "housemill_project_connection": "旧 House Mill 监测与 FloodPred 预测项目的继承关系",
         }
         raw = self._call([
             {"role": "system", "content": (
@@ -244,6 +259,8 @@ class DeepSeekClient:
                 "如果同时给出两者，要解释它们是不同层级，不能把批次 MAE 当作这次峰值误差，"
                 "不能凭 MAE 推断洪水事件检出率。事后评估不能说成回放时刻已经知道。"
                 "不能声称历史回放是实时信息、内部等级是官方警报，也不提供现场行动指令。"
+                "旧 House Mill 监测资料与旧论文只说明其记录时段；不能说旧硬件现在在线。"
+                "旧研究的水接触事件数不是 FloodPred 预测准确率。整理笔记须按其标明的原始网页或 PDF 页码引用。"
                 "只输出 JSON：{\"answer\":\"...\",\"citations\":[\"所有证据ID\"]}。"
             )},
             {"role": "user", "content": json.dumps({"question": question, "evidence": evidence}, ensure_ascii=False)},
@@ -294,6 +311,12 @@ class DeepSeekClient:
             "thesis_live_limit": "论文部署期评估未发生真实越线洪水",
             "thesis_rapid_rise": "论文快速涨水时约 30–60 分钟滞后",
             "thesis_model_design": "论文 PatchTST 改进、不对称损失与分类头",
+            "housemill_heritage": "House Mill 的历史建筑背景",
+            "housemill_flood_context": "House Mill 的河流和潮汐进水背景",
+            "housemill_old_sensor": "旧 House Mill 传感器布置和数据链路",
+            "housemill_study_findings": "Wilson 与 Zhang 历史监测研究发现",
+            "housemill_volunteer_need": "旧研究中的志愿者信息需求",
+            "housemill_project_connection": "旧监测与 FloodPred 的承接关系",
         }
         raw = self._call([
             {"role": "system", "content": (

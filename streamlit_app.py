@@ -69,7 +69,7 @@ def show_result(result: QueryResult) -> None:
                 st.write(volunteer_fact(item.fact))
                 if item.explanation:
                     st.write(f"换句话说：{volunteer_fact(item.explanation)}")
-                source_label = {"internal_project": "项目服务端文档", "evaluation_report": "项目评估报告", "thesis": "毕业论文", "official_public_guidance": "英国官方公开资料"}.get(item.source_type, item.source_type)
+                source_label = {"internal_project": "项目服务端文档", "evaluation_report": "项目评估报告", "thesis": "毕业论文", "official_public_guidance": "英国官方公开资料", "research_paper": "House Mill 历史研究论文", "prior_project": "早期传感器项目仓库", "heritage_public": "Historic England 建筑档案"}.get(item.source_type, item.source_type)
                 st.caption(source_label)
                 if "Watch" in item.fact:
                     st.caption("Caution 是本界面的统一显示名；源文件中的名称见“证据”。")
@@ -166,5 +166,8 @@ with st.expander("可以试试这些问题"):
 - `论文的离线事件召回率是多少？线上验证了洪水检出吗？`：分别查看离线与部署期证据。
 - `项目内部 Caution 是什么？`：查看内部等级；原始术语可在“证据”中核对。
 - `官方 Flood Alert 是什么？`：查看英国官方公开资料的静态定义，不查询当前警报。
+- `House Mill 是什么？为什么会受潮汐影响？`：查看建筑档案和历史研究背景。
+- `Duncan Wilson 的旧传感器怎么布置？论文中的 136 次与 42 次有什么区别？`：分别查看旧项目仓库与论文；不代表设备今天在线。
+- `旧 House Mill 监测和 FloodPred 是什么关系？`：查看毕业论文中的承接说明。
 - `周末适合读什么书？`：普通聊天，不会冒充项目事实。"""
     )

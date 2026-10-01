@@ -1,0 +1,3 @@
+# Earlier monitoring study: observations and denominator (curated paraphrase)
+Wilson and Zhang (2025), PDF pp. 3-4, analyse 1 October 2023 to 30 September 2024. They report 136 water-contact events at the floorboards, of which 42 were high enough to be visibly apparent above the floorboards; these are different thresholds, not two competing counts of identical events. Fewer than 40% of flooding events fell within the paper's normal working-hours definition (09:00-18:00). The paper reports mean event duration 53 minutes (SD 25 minutes). These historical monitoring observations are not FloodPred prediction accuracy or current flood counts.
+Source: CUPUM_HouseMill (4).pdf, PDF pp. 3-4; original SHA-256 recorded in housemill_catalog.json.

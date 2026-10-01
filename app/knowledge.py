@@ -7,6 +7,7 @@ No LLM, embedding model, web request or site-specific SOP is used at query time.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 import hashlib
 import json
 import os
@@ -22,7 +23,8 @@ _DATA_MODE = os.environ.get("FLOODPRED_DATA_MODE", "")
 DEFAULT_CATALOG = _DEMO_CATALOG if _DATA_MODE == "demo" or not (ROOT / "backup" / "source_snapshot_2026-09-29").is_dir() else _SOURCE_CATALOG
 THESIS_CATALOG = ROOT / "knowledge" / "thesis_catalog.json"
 RULES_CATALOG = ROOT / "knowledge" / "rules_catalog.json"
-SOURCE_TYPES = frozenset({"internal_project", "evaluation_report", "official_public_guidance", "thesis"})
+HOUSEMILL_CATALOG = ROOT / "knowledge" / "housemill_catalog.json"
+SOURCE_TYPES = frozenset({"internal_project", "evaluation_report", "official_public_guidance", "thesis", "research_paper", "prior_project", "heritage_public"})
 
 
 class KnowledgeError(Exception):
@@ -53,6 +55,17 @@ def _normal(value: str) -> str:
     return re.sub(r"[\s\W_]+", "", value.casefold(), flags=re.UNICODE)
 
 
+def _near_keyword(question: str, keyword: str) -> float:
+    """Typo-tolerant fallback over short aliases, never a substitute for source checks."""
+    if len(question) < 5 or len(keyword) < 5:
+        return 0.0
+    if len(question) <= len(keyword):
+        return SequenceMatcher(None, question, keyword).ratio()
+    length = len(keyword)
+    return max(SequenceMatcher(None, question[index:index + length], keyword).ratio()
+               for index in range(len(question) - length + 1))
+
+
 def _source_evidence(record: dict[str, Any], root: Path) -> tuple[str, str | None]:
     ref = record["source_ref"]
     if record["source_type"] == "official_public_guidance":
@@ -76,6 +89,17 @@ def _source_evidence(record: dict[str, Any], root: Path) -> tuple[str, str | Non
             raise SourceIntegrityError("Source dissertation PDF hash changed; thesis excerpt refused")
         pages = ", ".join(str(page) for page in record["pdf_pages"])
         return f"{record['origin_filename']} PDF文件页 {pages} | 摘录 {path}:{start}-{end} § {record['section']}", excerpt
+    if record["source_type"] == "research_paper":
+        origin = Path.home() / "Downloads" / record["origin_filename"]
+        if origin.is_file() and hashlib.sha256(origin.read_bytes()).hexdigest() != record["origin_sha256"]:
+            raise SourceIntegrityError("Source research PDF hash changed; curated note refused")
+        pages = ", ".join(str(page) for page in record["pdf_pages"])
+        return f"{record['origin_filename']} PDF文件页 {pages} | 整理笔记 {path}:{start}-{end} § {record['section']}", excerpt
+    if record["source_type"] in {"prior_project", "heritage_public"}:
+        url = record["origin_url"]
+        if not (url.startswith("https://github.com/djdunc/housemill") or url == "https://historicengland.org.uk/listing/the-list/list-entry/1080970"):
+            raise SourceIntegrityError(f"Unapproved background source URL: {url}")
+        return f"{url} | 整理笔记 {path}:{start}-{end} § {record['section']}", excerpt
     return f"{path}:{start}-{end} § {record['section']}", excerpt
 
 
@@ -90,6 +114,14 @@ def _load(catalog: Path) -> list[dict[str, Any]]:
         records.extend(rules)
         thesis_data = json.loads(THESIS_CATALOG.read_text(encoding="utf-8"))
         records.extend({**item, "origin_filename": thesis_data["origin_filename"], "origin_sha256": thesis_data["origin_sha256"]} for item in thesis_data["records"])
+        housemill_data = json.loads(HOUSEMILL_CATALOG.read_text(encoding="utf-8"))
+        for item in housemill_data["records"]:
+            if item["source_type"] == "research_paper":
+                records.append({**item, "origin_filename": housemill_data["paper_filename"], "origin_sha256": housemill_data["paper_sha256"]})
+            elif item["source_type"] == "thesis":
+                records.append({**item, "origin_filename": housemill_data["thesis_filename"], "origin_sha256": housemill_data["thesis_sha256"]})
+            else:
+                records.append(item)
     ids: set[str] = set()
     for item in records:
         if item["id"] in ids:
@@ -102,6 +134,8 @@ def _load(catalog: Path) -> list[dict[str, Any]]:
 
 def _inferred_type(question: str) -> str | None:
     q = _normal(question)
+    if any(token in q for token in ("wilson", "zhang", "cupum", "unchartedwaters")):
+        return "research_paper"
     if any(token in q for token in ("论文", "毕业设计", "dissertation", "thesis")):
         return "thesis"
     if any(token in q for token in ("项目内部", "内部watch", "项目阈值")):
@@ -142,6 +176,14 @@ def search(
         score = max((len(key) for key in keys if key and (key in q or q in key)), default=0)
         if score:
             candidates.append((record, score))
+    # Only a typed, bounded fallback: a near-spelling must still resolve to a
+    # curated record, whose file and version are verified below. Broad questions
+    # without a source type do not use approximate matching.
+    if not candidates and source_type is not None and len(q) <= 80:
+        for record in eligible:
+            similarity = max((_near_keyword(q, _normal(word)) for word in record["keywords"]), default=0.0)
+            if similarity >= 0.84:
+                candidates.append((record, round(similarity * 100)))
     if not candidates:
         raise NoEvidence("未找到匹配的已核对来源；不生成猜测答案。")
 
