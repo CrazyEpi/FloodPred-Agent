@@ -17,6 +17,7 @@ from typing import Callable
 from .archive import DEFAULT_DB
 from .knowledge import DEFAULT_CATALOG, ROOT
 from .rag import ChatClient, DeepSeekClient, IntentPlan, RAGError
+from .question_graph import excluded_concepts, excluded_routes
 from .replay import DEFAULT_SONAR_DB
 from .router import (
     DEFAULT_AUDIT_LOG, QueryResult, RoutePlan, UnsupportedRoute, _QUERIES,
@@ -149,6 +150,9 @@ def _merge(target: QueryResult, addition: QueryResult) -> None:
     target.errors.extend(addition.errors)
     target.warnings.extend(addition.warnings)
     target.trace.extend(addition.trace)
+    from .hybrid_retrieval import merge_candidates
+    merge_candidates(target.document_candidates, addition.document_candidates)
+    target.retrieval_runs.extend(addition.retrieval_runs)
     order = ("archived_forecast", "historical_water", "evaluation_metrics", "knowledge")
     steps = set(target.plan.steps) | set(addition.plan.steps)
     concepts = list(target.plan.knowledge_concepts)
@@ -246,11 +250,14 @@ def _followup_plan(
                 return None
             result.warnings.append(f"缺口检查未完成：{exc}；仍使用本地规则。")
             result.trace.append({"step": "gap_review", "status": "failed", "error_type": type(exc).__name__})
+    suppressed_topics = excluded_concepts(result.question_graph) if result.question_graph else set()
+    suppressed_routes = excluded_routes(result.question_graph) if result.question_graph else set()
     concepts = [item for item in dict.fromkeys(proposals)
-                if item in _QUERIES and _relevant_concept(question, item) and f"knowledge:{item}" not in attempted]
+                if item in _QUERIES and item not in suppressed_topics
+                and _relevant_concept(question, item) and f"knowledge:{item}" not in attempted]
     routes = [item for item in dict.fromkeys(proposed_steps)
               if item in ("archived_forecast", "historical_water", "evaluation_metrics")
-              and _relevant_route(question, item) and item not in attempted]
+              and item not in suppressed_routes and _relevant_route(question, item) and item not in attempted]
     available = budget.limits.max_tool_calls - budget.tool_calls
     if available <= 0 and (routes or concepts):
         budget.exceeded = "tool_limit"
@@ -320,7 +327,7 @@ def run_investigation(
         llm_available = False
     attempted = _attempted(result.plan)
     if not result.plan.steps:
-        result.investigation_stop_reason = "chat_mode"
+        result.investigation_stop_reason = ("needs_clarification" if result.answer_status == "needs_clarification" else "chat_mode")
     else:
         for round_number in range(2, limits.max_rounds + 1):
             if budget.exceeded:
@@ -364,6 +371,8 @@ def run_investigation(
     if budget.exceeded:
         result.investigation_stop_reason = budget.exceeded
     _resolve_incomplete_result(result)
+    if result.answer_status == "candidate_only" and not result.evidence_bundle:
+        result.investigation_stop_reason = "candidates_only"
     traces = getattr(provider, "reasoning_traces", None)
     if isinstance(traces, list):
         result.reasoning_traces = list(traces)

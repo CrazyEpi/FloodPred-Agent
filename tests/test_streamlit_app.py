@@ -14,6 +14,29 @@ APP_FILE = Path(__file__).resolve().parents[1] / "streamlit_app.py"
 
 
 class StreamlitAppTests(unittest.TestCase):
+    def test_raw_retrieval_candidates_are_separate_from_answers(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run()
+        app.checkbox[0].set_value(False)
+        app.text_input[0].set_value("FloodPred以前测水的东西摆在哪里")
+        app.button[0].click().run()
+        self.assertFalse(app.exception)
+        self.assertFalse(app.error)
+        self.assertTrue(any("只展示候选段落" in item.value for item in app.info))
+        self.assertTrue(any("仅候选，未用于结论" in item.label for item in app.expander))
+        self.assertIn("retrieval_runs", str(app.get("json")[0].value))
+
+    def test_ambiguous_question_shows_graph_and_clarification_without_cards(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run()
+        app.checkbox[0].set_value(False)
+        app.text_input[0].set_value("旧传感器怎么布置？它和现在的预测有什么关系？")
+        app.button[0].click().run()
+        self.assertFalse(app.exception)
+        self.assertFalse(app.metric)
+        self.assertFalse(app.error)
+        self.assertTrue(any("当前实时水情" in item.value for item in app.markdown))
+        self.assertIn("question_graph", str(app.get("json")[0].value))
+        self.assertIn("needs_clarification", str(app.get("json")[0].value))
+
     def test_default_question_shows_card_sources_and_debug(self) -> None:
         app = AppTest.from_file(str(APP_FILE)).run()
         self.assertFalse(app.exception)

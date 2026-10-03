@@ -83,7 +83,9 @@ def show_result(result: QueryResult) -> None:
                 st.caption(source_label)
                 if "Watch" in item.fact:
                     st.caption("Caution 是本界面的统一显示名；源文件中的名称见“证据”。")
-        if not any((result.answer_text, result.forecast, result.water, result.evaluation, result.knowledge)):
+        if result.answer_status == "candidate_only":
+            st.info("找到了一些相关资料，可在‘证据’中查看。还没有确认它们能回答整个问题，所以这次只展示候选段落。")
+        if not any((result.answer_text, result.forecast, result.water, result.evaluation, result.knowledge, result.document_candidates)):
             st.info("没有可展示的结果；请查看上方错误和调试信息。")
 
     with evidence_tab:
@@ -121,7 +123,28 @@ def show_result(result: QueryResult) -> None:
                 st.write(f"来源目录的原始摘要：{item.fact}")
                 if "Watch" in item.fact:
                     st.caption("显示名称 Caution 对应此来源中的 Watch；源文件和引用 ID 保留原词，不能把别名当成原文。")
-        if not any((result.forecast, result.water, result.evaluation, result.knowledge)):
+        if result.document_candidates:
+            st.subheader("检索到的相关资料")
+            st.caption("这些是检索候选。文件校验和相似度不能证明段落足以支持答案；未用于本次结论的资料也列在这里，方便核对。核对日期不代表资料在历史回放时已经可用。")
+            selected_ids = {item.citation_id for item in result.knowledge}
+            for hit in result.document_candidates:
+                record = hit.record
+                paragraph_ids = {record["id"], *(item["id"] for item in hit.equivalent_records)}
+                label = "本次已选来源条目" if paragraph_ids & selected_ids else "仅候选，未用于结论"
+                with st.expander(f"{record['title']} · {record['section']} · {label}"):
+                    st.caption(f"{record['source_type']} · 版本：{record['version']} · ID：{record['id']}")
+                    if hit.equivalent_records:
+                        st.caption("同段落的其他目录 ID：" + "、".join(item["id"] for item in hit.equivalent_records))
+                    st.code(hit.locator, language=None)
+                    if record.get("sha256"):
+                        st.caption(f"本地源文件 SHA-256：{record['sha256']}")
+                    if record.get("origin_sha256"):
+                        st.caption(f"原始 PDF SHA-256：{record['origin_sha256']}")
+                    if hit.excerpt:
+                        st.code(hit.excerpt, language=None)
+                    else:
+                        st.write("此条只有官方链接和目录摘要，没有本地网页原文快照。")
+        if not any((result.forecast, result.water, result.evaluation, result.knowledge, result.document_candidates)):
             st.info("本次是普通对话或澄清问题，没有调用项目数据和资料。" if result.answer_text else "本次没有通过验证的证据。")
 
     with debug_tab:
@@ -135,6 +158,8 @@ def show_result(result: QueryResult) -> None:
             "response_mode": result.response_mode,
             "knowledge_concepts": result.plan.knowledge_concepts,
             "evaluation_scope": result.plan.evaluation_scope,
+            "question_graph": result.question_graph.to_dict() if result.question_graph else None,
+            "retrieval_runs": result.retrieval_runs,
             "tool_trace": result.trace,
             "investigation_rounds": result.investigation_rounds,
             "investigation_tool_calls": result.investigation_tool_calls,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
 import hashlib
@@ -13,8 +13,10 @@ from typing import Callable, Literal
 from uuid import uuid4
 
 from .archive import DEFAULT_DB
-from .knowledge import DEFAULT_CATALOG, ROOT, NoEvidence, search
+from .knowledge import DEFAULT_CATALOG, ROOT, Hit, KnowledgeError, NoEvidence, SourceIntegrityError, search
+from .hybrid_retrieval import document_requests, hybrid_search, make_request, merge_candidates, request_for_concept, safe_trace
 from .rag import ChatClient, DeepSeekClient, IntentPlan, RAGError, explain_hit
+from .question_graph import QuestionGraph, build_question_graph, excluded_concepts, excluded_routes
 from .read_tools import (
     EvaluationArgs,
     EvaluationMetric,
@@ -79,6 +81,9 @@ class QueryResult:
     investigation_llm_calls: int = 0
     investigation_stop_reason: str | None = None
     audit_status: str = "pending"
+    question_graph: QuestionGraph | None = None
+    document_candidates: list[Hit] = field(default_factory=list, repr=False)
+    retrieval_runs: list[dict] = field(default_factory=list, repr=False)
 
 
 DEFAULT_AUDIT_LOG = ROOT / "logs" / "requests.jsonl"
@@ -136,9 +141,10 @@ def _reject_unsafe_intent(question: str) -> None:
         cue in q for cue in ("历史", "当时", "回放", "过去", "事后")
     ):
         raise UnsupportedRoute("这里没有实时水位或当前风险数据，只能回看历史记录；请不要把回放结果当作现在的情况。")
-    if (any(word in q for word in ("现在", "目前", "当前", "今天", "如今", "还在", "仍在"))
-        and any(word in q for word in ("传感器", "感应器", "水位仪", "声纳", "sonar", "探头", "旧设备"))
-        and any(word in q for word in ("布置", "安装", "在哪", "放哪", "位置", "运行", "在线", "还用", "还在", "仍在"))):
+    if any(any(word in clause for word in ("现在", "目前", "当前", "今天", "如今", "还在", "仍在"))
+           and any(word in clause for word in ("传感器", "感应器", "水位仪", "声纳", "sonar", "探头", "旧设备"))
+           and any(word in clause for word in ("布置", "安装", "在哪", "放哪", "位置", "运行", "在线", "还用", "还在", "仍在"))
+           for clause in re.split(r"[，,；;。！？!?\n]", q)):
         raise UnsupportedRoute("现有资料只记录早期传感器的历史布置，不能确认设备现在的位置或运行状态。可以问‘旧传感器当时怎么布置的？’")
 
 
@@ -292,6 +298,7 @@ def run_query(
             _write_audit({"request_id": request_id, "at_utc": timestamp, "question_sha256": hashlib.sha256(question.encode("utf-8")).hexdigest(), "route": [], "status": "rejected", "reason": str(exc)}, audit_log)
         raise
     semantic_concepts: tuple[str, ...] = ()
+    question_graph = build_question_graph(question)
     routing_note: str | None = None
     routing_error_type: str | None = None
     proposed: IntentPlan | None = None
@@ -315,7 +322,13 @@ def run_query(
         if callable(planner):
             try:
                 proposed = planner(question, tuple(_QUERIES))
+                if proposed.question_graph is not None:
+                    if (not isinstance(proposed.question_graph, QuestionGraph)
+                        or proposed.question_graph.original_text != question):
+                        raise RAGError("问题图与本次用户原话不一致。")
+                    question_graph = proposed.question_graph
             except RAGError as exc:
+                proposed = None
                 routing_note = f"DeepSeek 理解问题时遇到困难：{exc}；仍按本地规则取证。"
                 routing_error_type = type(exc).__name__
                 if re.fullmatch(r"\s*(你好|您好|嗨|hi|hello)[!！。.]?\s*", question, flags=re.IGNORECASE):
@@ -334,6 +347,14 @@ def run_query(
             local_plan = plan_route(question, semantic_concepts=semantic_concepts)
         except UnsupportedRoute:
             pass
+        if local_plan is None and not question_graph.needs_clarification:
+            q = question.casefold()
+            # A document-shaped project request can discover catalog candidates
+            # even when no preset concept resolves. It cannot become an answer.
+            domain = any(cue in q for cue in ("floodpred", "house mill", "housemill", "旧传感器", "测水", "论文", "潮水", "潮汐"))
+            document_request = any(cue in q for cue in ("布置", "摆放", "安装", "位置", "哪里", "方法", "背景", "需要", "研究", "输入", "论文"))
+            if domain and document_request:
+                local_plan = RoutePlan(("knowledge",), (), None)
     if proposed and proposed.mode in ("greeting", "general") and local_plan is None:
         project_cues = ("floodpred", "洪水", "水位", "预警", "警报", "预测", "mae", "模型", "项目", "论文", "watch", "caution", "warning", "patchtst")
         if any(cue in question.casefold() for cue in project_cues):
@@ -351,16 +372,48 @@ def run_query(
         if audit_log is not None:
             _write_audit({"request_id": request_id, "at_utc": timestamp, "question_sha256": hashlib.sha256(question.encode("utf-8")).hexdigest(), "route": [], "status": "rejected", "reason": str(exc)}, audit_log)
         raise UnsupportedRoute(f"{exc} {routing_note or ''}".strip()) from exc
-    mode = proposed.mode if proposed and not plan.steps else "project"
+    suppressed = excluded_routes(question_graph)
+    suppressed_topics = excluded_concepts(question_graph)
+    if suppressed or suppressed_topics:
+        concepts = tuple(item for item in plan.knowledge_concepts if item not in suppressed_topics)
+        steps = tuple(step for step in plan.steps if step not in suppressed
+                      and (step != "knowledge" or concepts))
+        plan = RoutePlan(steps, concepts, None if "evaluation_metrics" in suppressed else plan.evaluation_scope)
+    if question_graph.needs_clarification:
+        plan = RoutePlan((), (), None)
+    # Explicit source requests override a concept's historical default route.
+    # Do not let an internal Watch concept abort a request for thesis Caution.
+    if "knowledge" in plan.steps:
+        compatible = []
+        for concept in plan.knowledge_concepts:
+            query, source_hint = _QUERIES[concept]
+            request = request_for_concept(question, question_graph, concept, query)
+            if request.source_types is None or source_hint in request.source_types:
+                compatible.append(concept)
+        plan = RoutePlan(plan.steps, tuple(compatible), plan.evaluation_scope)
+    clarification_text = (question_graph.clarifications[0] if question_graph.needs_clarification else
+                          "你排除了这次可查的内容。你想改查哪一部分？" if (suppressed or suppressed_topics) and not plan.steps else None)
+    mode = ("clarify" if clarification_text else
+            proposed.mode if proposed and not plan.steps else "project")
     result = QueryResult(request_id=request_id, question=question, as_of_utc=as_of_utc, plan=plan,
-                         knowledge_checked_on_or_before=knowledge_checked_on_or_before, response_mode=mode)
+                         knowledge_checked_on_or_before=knowledge_checked_on_or_before,
+                         response_mode=mode, question_graph=question_graph)
+    result.trace.append({"step": "question_graph", "status": "clarify" if question_graph.needs_clarification else "checked",
+                         "origin": question_graph.origin, "nodes": str(len(question_graph.nodes)),
+                         "ambiguous_references": str(sum(ref.status == "ambiguous" for ref in question_graph.coreferences)),
+                         "suppressed_routes": ",".join(sorted(suppressed)),
+                         "suppressed_concepts": ",".join(sorted(suppressed_topics))})
+    result.warnings.extend(question_graph.validation_notes)
     if use_llm:
         result.trace.append({"step": "intent_plan", "status": "matched" if proposed or semantic_concepts else ("failed" if routing_note else "no_match"), "mode": mode, "concepts": ",".join(plan.knowledge_concepts), "routes": ",".join(plan.steps), "error_type": routing_error_type or ""})
     if routing_note:
         result.errors.append(routing_note)
     if not plan.steps:
         reply = getattr(provider, "reply", None)
-        if callable(reply):
+        if clarification_text:
+            result.answer_text = clarification_text
+            result.answer_status = "needs_clarification"
+        elif callable(reply):
             try:
                 result.answer_text = reply(question, mode)
                 result.trace.append({"step": "chat_reply", "status": "ok", "mode": mode})
@@ -370,6 +423,32 @@ def run_query(
         if not result.answer_text and mode == "greeting":
             result.answer_text = "你好！这里可以回看过去某个时刻的洪水预测，也能查项目资料。你可以试着问：‘当时预测的最高水位是多少？’"
     evidence_bundle: list[dict[str, str]] = []
+    # One logical read-only knowledge call can batch bounded local node queries.
+    # Extra nodes discover candidates only; they never enter the answer bundle.
+    graph_requests = document_requests(question_graph)
+    graph_batch_done = False
+    def collect_candidates(request):
+        candidates = hybrid_search(request, checked_on_or_before=knowledge_checked_on_or_before,
+                                   catalog=catalog, root=root)
+        merge_candidates(result.document_candidates, candidates.hits)
+        result.retrieval_runs.append(candidates.to_debug())
+        result.trace.append(safe_trace(candidates))
+        return candidates
+
+    def collect_graph_batch(primary):
+        nonlocal graph_batch_done
+        if graph_batch_done:
+            return
+        graph_batch_done = True
+        extra_requests = [request for request in graph_requests
+                          if request.fragment != primary.fragment or request.source_types != primary.source_types]
+        for request in extra_requests[:5]:
+            try:
+                collect_candidates(request)
+            except (OSError, ValueError, KnowledgeError) as exc:
+                result.warnings.append(f"问题 {request.node_id} 的候选补充检索未完成：{type(exc).__name__}。")
+                result.trace.append({"step": "hybrid_retrieval", "node_id": request.node_id or "",
+                                     "status": "candidate_error", "error_type": type(exc).__name__})
     for step in plan.steps:
         try:
             if step == "archived_forecast":
@@ -392,17 +471,26 @@ def run_query(
                 result.trace.append({"step": step, "status": "ok", "scope": result.evaluation.scope, "version_utc": result.evaluation.generated_utc, "source_sha256": result.evaluation.source_sha256})
                 evidence_bundle.append({"id": f"evaluation:{result.evaluation.scope}:{result.evaluation.source_sha256[:12]}", "kind": "hindsight_evaluation", "fact": f"事后批次评估 MAE {result.evaluation.mae_m:.6f} {result.evaluation.unit}；样本范围：{volunteer_fact(result.evaluation.sample_scope)}；匹配预测目标点 {result.evaluation.matched_prediction_points}；版本生成时间 {_friendly_utc(result.evaluation.generated_utc)}。MAE 是点级平均绝对误差，通俗地说，就是把这一批预测和实测逐个比较后平均差了多少米；不是某一次预测峰值的误差，也不是洪水事件检出率。", "source": "已校验哈希的只读评估快照"})
             else:
+                if not plan.knowledge_concepts:
+                    if tool_guard is not None:
+                        tool_guard("knowledge:document_search")
+                    request = graph_requests[0] if graph_requests else make_request(question)
+                    collect_candidates(request)
+                    collect_graph_batch(request)
+                    result.answer_status = "candidate_only"
                 for concept in plan.knowledge_concepts:
                     if tool_guard is not None:
                         tool_guard(f"knowledge:{concept}")
-                    query, source_type = _QUERIES[concept]
-                    relevant = [
-                        hit for hit in search(query, source_type=source_type, semantic=True,
-                                              checked_on_or_before=knowledge_checked_on_or_before,
-                                              catalog=catalog, root=root)
-                        if hit.record["concept"] == concept
-                    ]
+                    query, _legacy_source_hint = _QUERIES[concept]
+                    request = request_for_concept(question, question_graph, concept, query)
+                    candidates = collect_candidates(request)
+                    collect_graph_batch(request)
+                    relevant = [replace(hit, record=record) for hit in candidates.hits
+                                for record in (hit.record, *hit.equivalent_records)
+                                if record["concept"] == concept]
                     if len(relevant) != 1:
+                        if any(item["concept"] == concept for item in candidates.quarantined):
+                            raise SourceIntegrityError(f"{concept} 的目标来源缺失或未通过哈希检查。")
                         raise NoEvidence(f"{concept} 没有唯一、已核验的知识记录。")
                     hit = relevant[0]
                     explanation = None
@@ -424,7 +512,7 @@ def run_query(
                         retrieval_methods=hit.retrieval_methods,
                     ))
                     source_note = "；原始术语 Watch，界面别名 Caution" if "Watch" in hit.record["summary"] else ""
-                    evidence_bundle.append({"id": hit.record["id"], "kind": hit.record["source_type"], "fact": volunteer_fact(hit.record["summary"]), "source": f"{hit.record['title']} § {hit.record['section']}{source_note}"})
+                    evidence_bundle.append({"id": hit.record["id"], "kind": hit.record["source_type"], "fact": volunteer_fact(hit.record["summary"]), "source": f"{hit.record['title']} § {hit.record['section']}{source_note}", "excerpt": hit.excerpt or ""})
                     result.trace.append({"step": step, "status": "ok", "citation_id": hit.record["id"], "source_type": hit.record["source_type"], "source_locator": hit.locator, "version": hit.record["version"], "llm_status": "accepted" if explanation else ("link_only" if use_llm and not hit.excerpt else ("failed" if use_llm else "disabled"))})
         except (OSError, ValueError, KeyError, TypeError) as exc:
             result.errors.append(f"{step}：{exc}")

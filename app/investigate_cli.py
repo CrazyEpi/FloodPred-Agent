@@ -39,6 +39,8 @@ def main() -> int:
         "sources": [{"id": item.citation_id, "fact": item.fact, "locator": item.locator} for item in result.knowledge],
         "errors": result.errors,
         "warnings": result.warnings,
+        "question_graph": result.question_graph.to_dict() if result.question_graph else None,
+        "retrieval_runs": result.retrieval_runs,
         "trace": result.trace,
     }, ensure_ascii=False, indent=2))
     return 1 if result.errors else 0

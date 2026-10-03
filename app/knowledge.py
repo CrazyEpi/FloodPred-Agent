@@ -57,6 +57,9 @@ class Hit:
     excerpt: str | None
     retrieval_methods: tuple[str, ...] = ()
     semantic_similarity: float | None = None
+    fusion_score: float | None = None
+    ranking_trace: tuple[dict[str, Any], ...] = ()
+    equivalent_records: tuple[dict[str, Any], ...] = ()
 
 
 _SEMANTIC_ALIASES = {
@@ -186,9 +189,12 @@ def _source_evidence(record: dict[str, Any], root: Path) -> tuple[str, str | Non
         raise SourceIntegrityError(f"Invalid line span: {ref}:{start}-{end}")
     excerpt = "\n".join(lines[start - 1:end])
     if record["source_type"] == "thesis":
-        origin = ROOT.parent / "Dissertation" / record["origin_filename"]
-        if origin.is_file() and hashlib.sha256(origin.read_bytes()).hexdigest() != record["origin_sha256"]:
-            raise SourceIntegrityError("Source dissertation PDF hash changed; thesis excerpt refused")
+        # The project moved from C:\UCL to C:\UCL\CASA0016. Preserve original
+        # PDF verification after relocation; never silently skip a present copy.
+        for parent in ROOT.parents[:3]:
+            origin = parent / "Dissertation" / record["origin_filename"]
+            if origin.is_file() and hashlib.sha256(origin.read_bytes()).hexdigest() != record["origin_sha256"]:
+                raise SourceIntegrityError("Source dissertation PDF hash changed; thesis excerpt refused")
         pages = ", ".join(str(page) for page in record["pdf_pages"])
         return f"{record['origin_filename']} PDF文件页 {pages} | 摘录 {path}:{start}-{end} § {record['section']}", excerpt
     if record["source_type"] == "research_paper":

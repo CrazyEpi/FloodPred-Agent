@@ -16,6 +16,8 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from .knowledge import DEFAULT_CATALOG, ROOT, Hit, NoEvidence, search
+from .question_graph import (GraphValidationError, QuestionGraph, build_question_graph,
+                             checked_question_graph)
 
 
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
@@ -48,6 +50,7 @@ class IntentPlan:
     steps: tuple[str, ...] = ()
     concepts: tuple[str, ...] = ()
     evaluation_scope: Literal["overall", "high_water_2m"] | None = None
+    question_graph: QuestionGraph | None = None
 
 
 _ALLOWED_STEPS = frozenset({"archived_forecast", "historical_water", "evaluation_metrics"})
@@ -213,17 +216,36 @@ class DeepSeekClient:
                 "不要因为提到了‘预测’就自动取峰值；不要把内部等级当作官方警报。"
                 "用户说 Caution 时，可选 internal_watch；除非明确问论文，不要顺带选论文主题。"
                 "纯闲聊或无法确定的项目问题不选工具。"
+                "同时把原话拆成可核实的问题图 question_graph。不要回答任何事实。"
+                "最多6个节点；每个节点有 id(q1到q6)、matched_phrase(完整且唯一的原文片段)、"
+                "subjects(该片段中逐字存在的对象短语)、kind(fact/definition/relation/comparison/cause)、"
+                "depends_on(前面节点的ID)。寒暄不成节点，纯寒暄 nodes=[]。"
+                "关系题先列两个对象的含义与范围节点，再列依赖二者的关系节点；"
+                "例如‘预测峰值和MAE有什么联系’不要改写成用户一定要求某次具体数值。"
+                "用户明确说‘当时/这次/多少’时才有具体数值请求。"
+                "代词保留原词，由程序核对指代；有歧义时不要猜。"
+                "时间、否定与内部/官方来源限定由程序从原文派生，不要添加日期、单位、数值或对象。"
+                "不要把‘不是’改成肯定，不要把历史布置改成目前位置。"
                 "只输出 JSON 对象：{\"mode\":\"project|greeting|general|clarify\","
                 "\"routes\":[{\"id\":\"...\",\"matched_phrase\":\"...\"}],"
                 "\"concepts\":[{\"id\":\"...\",\"matched_phrase\":\"...\"}],"
-                "\"evaluation_scope\":null}。"
+                "\"evaluation_scope\":null,\"question_graph\":{\"nodes\":["
+                "{\"id\":\"q1\",\"matched_phrase\":\"原文片段\",\"subjects\":[\"原文对象\"],"
+                "\"kind\":\"fact\",\"depends_on\":[]}]}}。"
             )},
             {"role": "user", "content": json.dumps({
                 "question": question,
                 "allowed_concepts": [{"id": item, "description": descriptions[item]} for item in allowed_concepts],
             }, ensure_ascii=False)},
         ], max_tokens=4500, thinking=self.thinking_enabled, stage="问题规划")
-        return _checked_plan(raw, question, allowed_concepts)
+        plan = _checked_plan(raw, question, allowed_concepts)
+        try:
+            value = json.loads(raw)
+            graph = (checked_question_graph(question, value["question_graph"])
+                     if "question_graph" in value else build_question_graph(question))
+        except GraphValidationError as exc:
+            raise UnsupportedAnswer(f"DeepSeek 问题图未通过原文或依赖校验：{exc}") from exc
+        return IntentPlan(plan.mode, plan.steps, plan.concepts, plan.evaluation_scope, graph)
 
     def review(
         self, question: str, evidence: list[dict[str, str]], attempted: list[str],
