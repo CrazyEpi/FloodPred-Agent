@@ -128,8 +128,8 @@ class HybridRetrievalTests(unittest.TestCase):
     def test_new_unmapped_request_produces_candidates_without_answer(self):
         result = run_investigation("FloodPred以前测水的东西摆在哪里", audit_log=None)
         self.assertTrue(result.document_candidates)
-        self.assertEqual(result.answer_status, "candidate_only")
-        self.assertEqual(result.investigation_stop_reason, "candidates_only")
+        self.assertEqual(result.answer_status, "fallback")
+        self.assertEqual(result.investigation_stop_reason, "no_support_gain")
         self.assertFalse(result.knowledge)
         self.assertIsNone(result.answer_text)
 

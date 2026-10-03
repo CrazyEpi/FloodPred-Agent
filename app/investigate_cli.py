@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import asdict
 
 from .investigation import InvestigationLimits, run_investigation
 from .router import UnsupportedRoute
@@ -40,6 +41,9 @@ def main() -> int:
         "errors": result.errors,
         "warnings": result.warnings,
         "question_graph": result.question_graph.to_dict() if result.question_graph else None,
+        "question_evidence": [row.to_dict() for row in result.question_evidence],
+        "verified_claims": [asdict(claim) for claim in result.verified_claims],
+        "source_rejections": result.source_rejections,
         "retrieval_runs": result.retrieval_runs,
         "trace": result.trace,
     }, ensure_ascii=False, indent=2))

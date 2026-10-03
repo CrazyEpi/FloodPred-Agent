@@ -34,24 +34,26 @@ class FakeReviewer:
 
 
 class InvestigationTests(unittest.TestCase):
-    def test_second_round_fills_official_definition_gap(self):
+    def test_second_round_does_not_treat_official_link_as_original_text(self):
         result = run_investigation("项目内部 Caution 和英国官方预警有什么区别？", audit_log=None)
         self.assertEqual(result.investigation_rounds, 2)
-        self.assertEqual(result.investigation_tool_calls, 2)
-        self.assertEqual(result.plan.knowledge_concepts, ("internal_watch", "official_flood_alert"))
-        self.assertEqual({item.source_type for item in result.knowledge}, {"internal_project", "official_public_guidance"})
+        self.assertEqual(result.investigation_tool_calls, 3)
+        self.assertEqual(result.plan.knowledge_concepts, ("internal_watch",))
+        self.assertTrue(any(hit.record["concept"] == "official_flood_alert" for hit in result.document_candidates))
+        self.assertEqual({item.source_type for item in result.knowledge}, {"internal_project"})
+        self.assertEqual(result.answer_status, "partial_verified")
         self.assertEqual(result.errors, [])
 
-    def test_reviewer_can_add_relevant_missing_source(self):
+    def test_complete_evidence_does_not_add_an_unrequested_source(self):
         fake = FakeReviewer(IntentPlan("project", (), ("housemill_heritage",)))
         result = run_investigation("House Mill 为什么会受潮汐影响？", use_llm=True, client=fake, audit_log=None)
-        self.assertEqual(result.investigation_rounds, 2)
-        self.assertEqual(result.investigation_tool_calls, 2)
-        self.assertEqual(result.investigation_llm_calls, 4)
-        self.assertEqual(fake.review_calls, 2)
+        self.assertEqual(result.investigation_rounds, 1)
+        self.assertEqual(result.investigation_tool_calls, 1)
+        self.assertEqual(result.investigation_llm_calls, 2)
+        self.assertEqual(fake.review_calls, 0)
         self.assertEqual({item.citation_id for item in result.knowledge},
                          {"housemill-flood-context-cupum-p1-p2", "housemill-heritage-historic-england-20260930"})
-        self.assertEqual(len(fake.synthesis_evidence), 2)
+        self.assertEqual(len(fake.synthesis_evidence), 1)
         self.assertIsNotNone(result.answer_text)
 
     def test_unrelated_or_non_readonly_reviewer_requests_are_ignored(self):
@@ -77,7 +79,8 @@ class InvestigationTests(unittest.TestCase):
             use_llm=True, client=BadPlanner(), audit_log=None,
         )
         self.assertEqual(result.investigation_rounds, 2)
-        self.assertEqual(len(result.knowledge), 2)
+        self.assertEqual(len(result.knowledge), 1)
+        self.assertEqual(result.answer_status, "partial_verified")
         self.assertIsNotNone(result.answer_text)
         self.assertTrue(result.warnings)
         self.assertEqual(result.errors, [])
@@ -132,7 +135,7 @@ class InvestigationTests(unittest.TestCase):
                 "当时预测峰值是多少？项目内部 Caution 是什么？", as_of_utc=AS_OF,
                 root=Path(directory), audit_log=None,
             )
-        self.assertEqual(result.investigation_stop_reason, "partial_evidence")
+        self.assertEqual(result.investigation_stop_reason, "no_support_gain")
         self.assertIsNotNone(result.forecast)
         self.assertEqual(result.answer_status, "partial_verified")
         self.assertIn(result.forecast.run_id, result.answer_text)
@@ -143,7 +146,7 @@ class InvestigationTests(unittest.TestCase):
             result = run_investigation(
                 "项目内部 Caution 是什么？", root=Path(directory), audit_log=None,
             )
-        self.assertEqual(result.investigation_stop_reason, "partial_evidence")
+        self.assertEqual(result.investigation_stop_reason, "no_support_gain")
         self.assertIsNone(result.answer_text)
         self.assertEqual(result.answer_status, "fallback")
         self.assertIsNotNone(result.fallback_text)
@@ -227,7 +230,7 @@ class InvestigationTests(unittest.TestCase):
             record = json.loads(content)
             self.assertEqual(len(content.splitlines()), 1)
             self.assertEqual(record["rounds"], 2)
-            self.assertEqual(record["tool_calls"], 2)
+            self.assertEqual(record["tool_calls"], 3)
             self.assertNotIn("项目内部 Caution", content)
             self.assertEqual(result.audit_status, "written")
 

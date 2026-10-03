@@ -1,0 +1,1484 @@
+{
+  "run_at_utc": "2026-10-03T10:11:17.954324+00:00",
+  "mode": "offline_no_llm",
+  "passed": 18,
+  "total": 18,
+  "scope": "固定小样本证据状态回归，不是开放问题准确率、语义蕴含证明或洪水检出率。",
+  "flood_event_detection_validated": false,
+  "results": [
+    {
+      "id": "internal",
+      "question": "项目内部 Caution 是什么？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "项目内部 Caution（界面统一显示名称）表示：未来预测的最高水位在 4.20 m（含）到 4.43 m（不含）之间，接近项目洪水线。这是内部等级，不是官方警报。【q1-1 → internal-watch-2026-09-29】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "项目内部 Caution 是什么",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "internal-watch-2026-09-29"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-1",
+          "node_id": "q1",
+          "text": "项目内部 Caution（界面统一显示名称）表示：未来预测的最高水位在 4.20 m（含）到 4.43 m（不含）之间，接近项目洪水线。这是内部等级，不是官方警报。",
+          "citations": [
+            {
+              "id": "internal-watch-2026-09-29",
+              "locator": "C:\\UCL\\CASA0016\\FloodPred-Agent\\backup\\source_snapshot_2026-09-29\\cloud_flood_server\\README.md:13-20 § 风险等级",
+              "version": "source-snapshot-2026-09-29",
+              "source_type": "internal_project",
+              "quote": "## 风险等级\n\n- `0 No risk`: 未来 24h 最高水位低于 `4.20m`，ESP32 显示 `#`。\n- `1 Watch`: 最高水位 `4.20m <= level < 4.43m`，表示接近洪水线但还没到。\n- `2 Warning`: 最高水位达到 `4.43m`，或连续超过 `4.43m` 达到 1 小时。\n- `3 Severe`: 最高水位达到 `4.70m`，或第一次达到 `4.43m` 的 ETA 小于等于 2 小时，或连续超过 `4.43m` 达到 2 小时。\n\n`eta_minutes` 和 `next_flood_utc` 只按真正洪水线 `4.43m` 计算。Watch 只给 `watch_eta_minutes`。",
+              "sha256": "7cf36cd8079cfc831f35a48fde163759e654679cfae1ef528ab7f67d4dccd3cd",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "warning",
+      "question": "项目内部 Warning 是什么？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "项目内部 Warning 的条件是预测最高水位达到 4.43 m，或连续超过 4.43 m 达到 1 小时。这是内部规则，不代表官方发布了警报。【q1-1 → internal-warning-2026-09-30】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "项目内部 Warning 是什么",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "internal-warning-2026-09-30"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-1",
+          "node_id": "q1",
+          "text": "项目内部 Warning 的条件是预测最高水位达到 4.43 m，或连续超过 4.43 m 达到 1 小时。这是内部规则，不代表官方发布了警报。",
+          "citations": [
+            {
+              "id": "internal-warning-2026-09-30",
+              "locator": "C:\\UCL\\CASA0016\\FloodPred-Agent\\backup\\source_snapshot_2026-09-29\\cloud_flood_server\\README.md:13-20 § 风险等级",
+              "version": "source-snapshot-2026-09-29",
+              "source_type": "internal_project",
+              "quote": "## 风险等级\n\n- `0 No risk`: 未来 24h 最高水位低于 `4.20m`，ESP32 显示 `#`。\n- `1 Watch`: 最高水位 `4.20m <= level < 4.43m`，表示接近洪水线但还没到。\n- `2 Warning`: 最高水位达到 `4.43m`，或连续超过 `4.43m` 达到 1 小时。\n- `3 Severe`: 最高水位达到 `4.70m`，或第一次达到 `4.43m` 的 ETA 小于等于 2 小时，或连续超过 `4.43m` 达到 2 小时。\n\n`eta_minutes` 和 `next_flood_utc` 只按真正洪水线 `4.43m` 计算。Watch 只给 `watch_eta_minutes`。",
+              "sha256": "7cf36cd8079cfc831f35a48fde163759e654679cfae1ef528ab7f67d4dccd3cd",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "thesis",
+      "question": "毕业论文中的内部 Caution 是什么？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "论文把 4.20 m 这一档称为 Caution；Warning 条件包括达到 4.43 m 或持续至少 1 小时；Severe 条件包括达到 4.70 m、持续超过 4.43 m 至少 2 小时，或预计 2 小时内越过 4.43 m。这些是项目内部规则。【q1-1 → thesis-risk-terms-p10】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "毕业论文中的内部 Caution 是什么",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "thesis-risk-terms-p10"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-1",
+          "node_id": "q1",
+          "text": "论文把 4.20 m 这一档称为 Caution；Warning 条件包括达到 4.43 m 或持续至少 1 小时；Severe 条件包括达到 4.70 m、持续超过 4.43 m 至少 2 小时，或预计 2 小时内越过 4.43 m。这些是项目内部规则。",
+          "citations": [
+            {
+              "id": "thesis-risk-terms-p10",
+              "locator": "Dissertaion_Floodpred_V3_HaoyuHu.pdf PDF文件页 10 | 摘录 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\thesis\\risk_terms.md:1-5 § 3.5 Real-Time Prediction Pipeline",
+              "version": "final-dissertation-2026-08-20",
+              "source_type": "thesis",
+              "quote": "Source: Haoyu Hu, FloodPred dissertation, PDF physical page 10 (section 3.5).\n\nA forecast is classified as “Caution”, the lowest alert above No risk, when its maximum level reaches 4.20 m.\nIt is classified as “Warning” when it reaches 4.43 m or remains above this level for at least one hour.\n“Severe” is issued when the predicted maximum reaches 4.70 m, remains above 4.43 m for at least two hours, or is expected to cross 4.43 m within two hours.",
+              "sha256": "6ff3d3fb0ed23d705e9a510d904a8c06f8082888e7a5faab0b75e208bd5d66a0",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "placement",
+      "question": "旧传感器怎么布置？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "旧项目把声纳设备放在磨坊内部，朝地板开口下方的水道测量；声纳连到 Arduino 和树莓派，还配了红外相机。资料记录的是旧布置，不证明设备今天仍在运行。【q1-1 → housemill-old-monitoring-github-20260930】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "旧传感器怎么布置",
+          "attribute": "placement",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "housemill-old-monitoring-github-20260930"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-1",
+          "node_id": "q1",
+          "text": "旧项目把声纳设备放在磨坊内部，朝地板开口下方的水道测量；声纳连到 Arduino 和树莓派，还配了红外相机。资料记录的是旧布置，不证明设备今天仍在运行。",
+          "citations": [
+            {
+              "id": "housemill-old-monitoring-github-20260930",
+              "locator": "https://github.com/djdunc/housemill | 整理笔记 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\housemill\\old_sensor.md:1-3 § README / Sonar Box and data pipeline",
+              "version": "github-readme-checked-2026-09-30",
+              "source_type": "prior_project",
+              "quote": "# Earlier House Mill monitoring installation (curated paraphrase)\nThe djdunc/housemill README documents an earlier monitoring installation: a MaxBotix MB7389 sonar connected to an Arduino and Raspberry Pi, plus a Pi NOIR camera with infrared illumination. Equipment was placed within the mill above an opening towards the channel. The Pi sent readings via Wi-Fi/GSM to an MQTT broker; the project used InfluxDB and Grafana for storage and display. The README describes roughly ten-minute sonar reporting and fifteen-minute river/tide reference data. This is historical project documentation, not proof that the installation is operating today.\nSource: https://github.com/djdunc/housemill ; README, checked 2026-09-30. The README describes both 10 and 11 raw samples per interval in different places, so no exact per-interval count is asserted here.",
+              "sha256": "6b792346b7257b18bfe1478a084a8ca9b2c729aae9c23a7be6eab039ebc29383",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "relationship",
+      "question": "旧传感器怎么布置？它和FloodPred预测方法有什么关系？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support",
+        "direct_support",
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support",
+        "direct_support",
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "旧项目把声纳设备放在磨坊内部，朝地板开口下方的水道测量；声纳连到 Arduino 和树莓派，还配了红外相机。资料记录的是旧布置，不证明设备今天仍在运行。【q1-1 → housemill-old-monitoring-github-20260930】\n\n论文中的方法是把声纳水位、降雨和潮汐一起用于预测：看过去 7 天、每 15 分钟一次的观测，预测接下来的 96 个点。这里说的是预测方法，不是当前水情。【q2-1 → thesis-forecast-design-p3】\n\n毕业论文明确记载：FloodPred 的声纳采集实现思路承接旧 House Mill 开源监测项目，并扩展为包含降雨和潮汐的预测流程。这说明项目实现的承接，不能证明继承了同一套实体设备，也不能证明设备或云服务现在在线。【q3-1 → housemill-floodpred-connection-thesis-p5】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "旧传感器怎么布置",
+          "attribute": "placement",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "housemill-old-monitoring-github-20260930"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q2",
+          "question": "它和FloodPred预测方法有什么关系",
+          "attribute": "method",
+          "status": "direct_support",
+          "claim_ids": [
+            "q2-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "thesis-forecast-design-p3"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q3",
+          "question": "它和FloodPred预测方法有什么关系",
+          "attribute": "connection",
+          "status": "direct_support",
+          "claim_ids": [
+            "q3-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "housemill-old-monitoring-github-20260930",
+            "housemill-floodpred-connection-thesis-p5",
+            "thesis-forecast-design-p3"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-1",
+          "node_id": "q1",
+          "text": "旧项目把声纳设备放在磨坊内部，朝地板开口下方的水道测量；声纳连到 Arduino 和树莓派，还配了红外相机。资料记录的是旧布置，不证明设备今天仍在运行。",
+          "citations": [
+            {
+              "id": "housemill-old-monitoring-github-20260930",
+              "locator": "https://github.com/djdunc/housemill | 整理笔记 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\housemill\\old_sensor.md:1-3 § README / Sonar Box and data pipeline",
+              "version": "github-readme-checked-2026-09-30",
+              "source_type": "prior_project",
+              "quote": "# Earlier House Mill monitoring installation (curated paraphrase)\nThe djdunc/housemill README documents an earlier monitoring installation: a MaxBotix MB7389 sonar connected to an Arduino and Raspberry Pi, plus a Pi NOIR camera with infrared illumination. Equipment was placed within the mill above an opening towards the channel. The Pi sent readings via Wi-Fi/GSM to an MQTT broker; the project used InfluxDB and Grafana for storage and display. The README describes roughly ten-minute sonar reporting and fifteen-minute river/tide reference data. This is historical project documentation, not proof that the installation is operating today.\nSource: https://github.com/djdunc/housemill ; README, checked 2026-09-30. The README describes both 10 and 11 raw samples per interval in different places, so no exact per-interval count is asserted here.",
+              "sha256": "6b792346b7257b18bfe1478a084a8ca9b2c729aae9c23a7be6eab039ebc29383",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        },
+        {
+          "id": "q2-1",
+          "node_id": "q2",
+          "text": "论文中的方法是把声纳水位、降雨和潮汐一起用于预测：看过去 7 天、每 15 分钟一次的观测，预测接下来的 96 个点。这里说的是预测方法，不是当前水情。",
+          "citations": [
+            {
+              "id": "thesis-forecast-design-p3",
+              "locator": "Dissertaion_Floodpred_V3_HaoyuHu.pdf PDF文件页 3 | 摘录 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\thesis\\forecast_design.md:1-4 § Abstract",
+              "version": "final-dissertation-2026-08-20",
+              "source_type": "thesis",
+              "quote": "Source: Haoyu Hu, FloodPred dissertation, PDF physical page 3 (Abstract).\n\nThe workflow combines sonar measurements, rainfall and tidal data, a modified PatchTST model, cloud deployment and two ESP32-based devices.\nSeven days of observations at 15-minute intervals are used to predict the following 96 points.",
+              "sha256": "b5471f0e7f76e8539085f3a5acae1ec229d5fd2c338ab02c4fcd2bdf61cd23c2",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        },
+        {
+          "id": "q3-1",
+          "node_id": "q3",
+          "text": "毕业论文明确记载：FloodPred 的声纳采集实现思路承接旧 House Mill 开源监测项目，并扩展为包含降雨和潮汐的预测流程。这说明项目实现的承接，不能证明继承了同一套实体设备，也不能证明设备或云服务现在在线。",
+          "citations": [
+            {
+              "id": "housemill-floodpred-connection-thesis-p5",
+              "locator": "Dissertaion_Floodpred_V3_HaoyuHu.pdf PDF文件页 3, 5 | 摘录 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\housemill\\project_connection.md:1-3 § Introduction: monitoring foundation",
+              "version": "final-dissertation-2026-08-20",
+              "source_type": "thesis",
+              "quote": "# How the earlier monitoring and FloodPred relate (curated paraphrase)\nHaoyu Hu's FloodPred dissertation, PDF p. 5, states that its sonar data-acquisition system builds on the open-source House Mill monitoring implementation documented by Wilson and Zhang (2025). The earlier work focused on measuring and understanding water at the mill; the dissertation extends this into a forecast pipeline with rainfall and tide inputs. This is a relationship between documented projects, not proof that the old equipment or today's cloud service is online.\nSource: Dissertaion_Floodpred_V3_HaoyuHu.pdf, PDF pp. 3, 5; original SHA-256 recorded in thesis_catalog.json.",
+              "sha256": "1710f20581a330775b9bdb3fb1002c126507dcd83847831ad55e418ec0920f88",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "hardware",
+      "question": "旧传感器和FloodPred预测方法是否直接继承同一套设备？",
+      "expected": "partial_verified",
+      "actual": "partial_verified",
+      "expected_states": null,
+      "actual_states": [
+        "direct_support",
+        "direct_support",
+        "related_only"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "目前能确认的局部结论是：\n\n旧项目把声纳设备放在磨坊内部，朝地板开口下方的水道测量；声纳连到 Arduino 和树莓派，还配了红外相机。资料记录的是旧布置，不证明设备今天仍在运行。【q1-1 → housemill-old-monitoring-github-20260930】\n\n论文中的方法是把声纳水位、降雨和潮汐一起用于预测：看过去 7 天、每 15 分钟一次的观测，预测接下来的 96 个点。这里说的是预测方法，不是当前水情。【q2-1 → thesis-forecast-design-p3】\n\n毕业论文明确记载：FloodPred 的声纳采集实现思路承接旧 House Mill 开源监测项目，并扩展为包含降雨和潮汐的预测流程。这说明项目实现的承接，不能证明继承了同一套实体设备，也不能证明设备或云服务现在在线。【q3-1 → housemill-floodpred-connection-thesis-p5】\n\n尚不能确认 q3‘旧传感器和FloodPred预测方法是否直接继承同一套设备’：段落相关，但没有回答本项所求属性；资料只明确承接实现思路，没有证明沿用了同一套实体设备。\n\n因此不能据此得出整个问题的完整结论。这里不是实时水情或官方警报。\n\n补查没有取得能支持更多结论的资料，已停止重复查询。",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "旧传感器和FloodPred预测方法是否直接继承同一套设备",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "housemill-old-monitoring-github-20260930"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q2",
+          "question": "旧传感器和FloodPred预测方法是否直接继承同一套设备",
+          "attribute": "method",
+          "status": "direct_support",
+          "claim_ids": [
+            "q2-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "thesis-forecast-design-p3"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q3",
+          "question": "旧传感器和FloodPred预测方法是否直接继承同一套设备",
+          "attribute": "connection",
+          "status": "related_only",
+          "claim_ids": [
+            "q3-1"
+          ],
+          "reasons": [
+            "段落相关，但没有回答本项所求属性。",
+            "段落相关，但没有回答本项所求属性。",
+            "资料只明确承接实现思路，没有证明沿用了同一套实体设备。"
+          ],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "housemill-old-monitoring-github-20260930",
+            "housemill-floodpred-connection-thesis-p5",
+            "thesis-forecast-design-p3"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "仅相关"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-1",
+          "node_id": "q1",
+          "text": "旧项目把声纳设备放在磨坊内部，朝地板开口下方的水道测量；声纳连到 Arduino 和树莓派，还配了红外相机。资料记录的是旧布置，不证明设备今天仍在运行。",
+          "citations": [
+            {
+              "id": "housemill-old-monitoring-github-20260930",
+              "locator": "https://github.com/djdunc/housemill | 整理笔记 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\housemill\\old_sensor.md:1-3 § README / Sonar Box and data pipeline",
+              "version": "github-readme-checked-2026-09-30",
+              "source_type": "prior_project",
+              "quote": "# Earlier House Mill monitoring installation (curated paraphrase)\nThe djdunc/housemill README documents an earlier monitoring installation: a MaxBotix MB7389 sonar connected to an Arduino and Raspberry Pi, plus a Pi NOIR camera with infrared illumination. Equipment was placed within the mill above an opening towards the channel. The Pi sent readings via Wi-Fi/GSM to an MQTT broker; the project used InfluxDB and Grafana for storage and display. The README describes roughly ten-minute sonar reporting and fifteen-minute river/tide reference data. This is historical project documentation, not proof that the installation is operating today.\nSource: https://github.com/djdunc/housemill ; README, checked 2026-09-30. The README describes both 10 and 11 raw samples per interval in different places, so no exact per-interval count is asserted here.",
+              "sha256": "6b792346b7257b18bfe1478a084a8ca9b2c729aae9c23a7be6eab039ebc29383",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        },
+        {
+          "id": "q2-1",
+          "node_id": "q2",
+          "text": "论文中的方法是把声纳水位、降雨和潮汐一起用于预测：看过去 7 天、每 15 分钟一次的观测，预测接下来的 96 个点。这里说的是预测方法，不是当前水情。",
+          "citations": [
+            {
+              "id": "thesis-forecast-design-p3",
+              "locator": "Dissertaion_Floodpred_V3_HaoyuHu.pdf PDF文件页 3 | 摘录 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\thesis\\forecast_design.md:1-4 § Abstract",
+              "version": "final-dissertation-2026-08-20",
+              "source_type": "thesis",
+              "quote": "Source: Haoyu Hu, FloodPred dissertation, PDF physical page 3 (Abstract).\n\nThe workflow combines sonar measurements, rainfall and tidal data, a modified PatchTST model, cloud deployment and two ESP32-based devices.\nSeven days of observations at 15-minute intervals are used to predict the following 96 points.",
+              "sha256": "b5471f0e7f76e8539085f3a5acae1ec229d5fd2c338ab02c4fcd2bdf61cd23c2",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        },
+        {
+          "id": "q3-1",
+          "node_id": "q3",
+          "text": "毕业论文明确记载：FloodPred 的声纳采集实现思路承接旧 House Mill 开源监测项目，并扩展为包含降雨和潮汐的预测流程。这说明项目实现的承接，不能证明继承了同一套实体设备，也不能证明设备或云服务现在在线。",
+          "citations": [
+            {
+              "id": "housemill-floodpred-connection-thesis-p5",
+              "locator": "Dissertaion_Floodpred_V3_HaoyuHu.pdf PDF文件页 3, 5 | 摘录 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\housemill\\project_connection.md:1-3 § Introduction: monitoring foundation",
+              "version": "final-dissertation-2026-08-20",
+              "source_type": "thesis",
+              "quote": "# How the earlier monitoring and FloodPred relate (curated paraphrase)\nHaoyu Hu's FloodPred dissertation, PDF p. 5, states that its sonar data-acquisition system builds on the open-source House Mill monitoring implementation documented by Wilson and Zhang (2025). The earlier work focused on measuring and understanding water at the mill; the dissertation extends this into a forecast pipeline with rainfall and tide inputs. This is a relationship between documented projects, not proof that the old equipment or today's cloud service is online.\nSource: Dissertaion_Floodpred_V3_HaoyuHu.pdf, PDF pp. 3, 5; original SHA-256 recorded in thesis_catalog.json.",
+              "sha256": "1710f20581a330775b9bdb3fb1002c126507dcd83847831ad55e418ec0920f88",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 2,
+      "tools": 2,
+      "stop_reason": "no_support_gain",
+      "errors": []
+    },
+    {
+      "id": "price",
+      "question": "旧传感器多少钱？",
+      "expected": "fallback",
+      "actual": "fallback",
+      "expected_states": [
+        "related_only"
+      ],
+      "actual_states": [
+        "related_only"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": null,
+      "fallback": "这次没有足够的已核验资料形成项目结论。缺少：q1：旧传感器多少钱（段落相关，但没有回答本项所求属性。）。补查没有取得能支持更多结论的资料，已停止重复查询。可以缩小问题或补充原始资料后再查。",
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "旧传感器多少钱",
+          "attribute": "value",
+          "status": "related_only",
+          "claim_ids": [],
+          "reasons": [
+            "段落相关，但没有回答本项所求属性。"
+          ],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": false,
+            "units": false,
+            "requested_attribute": false
+          },
+          "candidate_ids": [
+            "housemill-old-monitoring-github-20260930"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "仅相关"
+        }
+      ],
+      "claims": [],
+      "rounds": 2,
+      "tools": 2,
+      "stop_reason": "no_support_gain",
+      "errors": []
+    },
+    {
+      "id": "mae",
+      "question": "本批次MAE是多少？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "这批预测的平均误差（MAE）是 0.212531 m，共 76,091 个匹配预测目标点。样本范围：本评估快照中已成熟且匹配的预测目标点；不是相互独立的洪水事件，也未限定为达到 Caution 的事件。 评估版本：2026-08-10T02:02:33.544996Z。这是事后评估，不是独立洪水事件统计，也不是这一次峰值的实际误差。【q1-tool → evaluation:overall:45c11dfeeb39】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "本批次MAE是多少",
+          "attribute": "value",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-tool"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-tool",
+          "node_id": "q1",
+          "text": "这批预测的平均误差（MAE）是 0.212531 m，共 76,091 个匹配预测目标点。样本范围：本评估快照中已成熟且匹配的预测目标点；不是相互独立的洪水事件，也未限定为达到 Caution 的事件。 评估版本：2026-08-10T02:02:33.544996Z。这是事后评估，不是独立洪水事件统计，也不是这一次峰值的实际误差。",
+          "citations": [
+            {
+              "id": "evaluation:overall:45c11dfeeb39",
+              "locator": "C:\\UCL\\CASA0016\\FloodPred-Agent\\backup\\source_snapshot_2026-09-29\\forecast_evaluation\\output\\summary.json#point_metrics.mae_m",
+              "version": "2026-08-10T02:02:33.544996Z",
+              "source_type": "evaluation_report",
+              "quote": "事后批次评估 MAE 0.212531 m；样本范围：本评估快照中已成熟且匹配的预测目标点；不是相互独立的洪水事件，也未限定为达到 Caution 的事件。；匹配预测目标点 76091；版本生成时间 2026年8月10日 02:02（UTC）。MAE 是点级平均绝对误差，通俗地说，就是把这一批预测和实测逐个比较后平均差了多少米；不是某一次预测峰值的误差，也不是洪水事件检出率。 2026-08-10T02:02:33.544996Z",
+              "sha256": "45c11dfeeb39b3a44d86589fcecd2c54f65d8741846636a89182a587a666cff1",
+              "time_scope": "hindsight_evaluation",
+              "unit": "m"
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "highwater",
+      "question": "2米以上高水位MAE是多少？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "这批预测的平均误差（MAE）是 0.204788 m，共 22,658 个匹配预测目标点。样本范围：实测水位 ≥2.00 m 的已匹配预测目标点；同一目标时刻可能被不同提前量重复评分，且不代表 Caution 事件。 评估版本：2026-08-10T02:18:51.779010Z。这是事后评估，不是独立洪水事件统计，也不是这一次峰值的实际误差。【q1-tool → evaluation:high_water_2m:f5bc8dd21239】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "2米以上高水位MAE是多少",
+          "attribute": "value",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-tool"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-tool",
+          "node_id": "q1",
+          "text": "这批预测的平均误差（MAE）是 0.204788 m，共 22,658 个匹配预测目标点。样本范围：实测水位 ≥2.00 m 的已匹配预测目标点；同一目标时刻可能被不同提前量重复评分，且不代表 Caution 事件。 评估版本：2026-08-10T02:18:51.779010Z。这是事后评估，不是独立洪水事件统计，也不是这一次峰值的实际误差。",
+          "citations": [
+            {
+              "id": "evaluation:high_water_2m:f5bc8dd21239",
+              "locator": "C:\\UCL\\CASA0016\\FloodPred-Agent\\backup\\source_snapshot_2026-09-29\\forecast_evaluation\\output_above_2m\\high_water_summary.json#point_metrics.mae_m",
+              "version": "2026-08-10T02:18:51.779010Z",
+              "source_type": "evaluation_report",
+              "quote": "事后批次评估 MAE 0.204788 m；样本范围：实测水位 ≥2.00 m 的已匹配预测目标点；同一目标时刻可能被不同提前量重复评分，且不代表 Caution 事件。；匹配预测目标点 22658；版本生成时间 2026年8月10日 02:18（UTC）。MAE 是点级平均绝对误差，通俗地说，就是把这一批预测和实测逐个比较后平均差了多少米；不是某一次预测峰值的误差，也不是洪水事件检出率。 2026-08-10T02:18:51.779010Z",
+              "sha256": "f5bc8dd212397928fb74543bf309fc1e20d18bd9ade8163dde0aa54afad08082",
+              "time_scope": "hindsight_evaluation",
+              "unit": "m"
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "peak",
+      "question": "当时预测峰值是多少？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "当时预计最高水位是 3.7832 m，预计到达时间是 2026-08-03T16:15:00Z（UTC）。这是历史预测，不是实测或实时水情；run_id：ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38。【q1-tool → forecast:ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "当时预测峰值是多少",
+          "attribute": "value",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-tool"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-tool",
+          "node_id": "q1",
+          "text": "当时预计最高水位是 3.7832 m，预计到达时间是 2026-08-03T16:15:00Z（UTC）。这是历史预测，不是实测或实时水情；run_id：ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38。",
+          "citations": [
+            {
+              "id": "forecast:ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+              "locator": "归档 forecast_runs/forecast_points:run_id=ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+              "version": "2026-08-03T01:47:59.737191Z",
+              "source_type": "historical_forecast",
+              "quote": "回放时间 2026年8月3日 01:48（UTC）；当时预测未来最高水位 3.7832 m，预计到达时间 2026年8月3日 16:15（UTC）；内部等级 无风险。这是当时的预测，不是实测。 2026-08-03T16:15:00Z",
+              "sha256": null,
+              "time_scope": "known_at_replay",
+              "unit": "m"
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "derivation",
+      "question": "你好，预测峰值和MAE的联系是什么？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support",
+        "direct_support",
+        "explicit_derivation"
+      ],
+      "actual_states": [
+        "direct_support",
+        "direct_support",
+        "explicit_derivation"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "当时预计最高水位是 3.7832 m，预计到达时间是 2026-08-03T16:15:00Z（UTC）。这是历史预测，不是实测或实时水情；run_id：ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38。【q1-tool → forecast:ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38】\n\n这批预测的平均误差（MAE）是 0.212531 m，共 76,091 个匹配预测目标点。样本范围：本评估快照中已成熟且匹配的预测目标点；不是相互独立的洪水事件，也未限定为达到 Caution 的事件。 评估版本：2026-08-10T02:02:33.544996Z。这是事后评估，不是独立洪水事件统计，也不是这一次峰值的实际误差。【q2-tool → evaluation:overall:45c11dfeeb39】\n\n有限推导：峰值是一条预测里的最高水位；MAE 是事后对一批预测算出的平均误差，两者不是同一层级，不能拿它当这次峰值的误差，也不能用它直接构造这次预测的置信区间。【q3-derive → forecast:ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38、evaluation:overall:45c11dfeeb39】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "预测峰值和MAE的联系是什么",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-tool"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q2",
+          "question": "预测峰值和MAE的联系是什么",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q2-tool"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q3",
+          "question": "预测峰值和MAE的联系是什么",
+          "attribute": "connection",
+          "status": "explicit_derivation",
+          "claim_ids": [
+            "q3-derive"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "可明确推导"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-tool",
+          "node_id": "q1",
+          "text": "当时预计最高水位是 3.7832 m，预计到达时间是 2026-08-03T16:15:00Z（UTC）。这是历史预测，不是实测或实时水情；run_id：ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38。",
+          "citations": [
+            {
+              "id": "forecast:ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+              "locator": "归档 forecast_runs/forecast_points:run_id=ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+              "version": "2026-08-03T01:47:59.737191Z",
+              "source_type": "historical_forecast",
+              "quote": "回放时间 2026年8月3日 01:48（UTC）；当时预测未来最高水位 3.7832 m，预计到达时间 2026年8月3日 16:15（UTC）；内部等级 无风险。这是当时的预测，不是实测。 2026-08-03T16:15:00Z",
+              "sha256": null,
+              "time_scope": "known_at_replay",
+              "unit": "m"
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        },
+        {
+          "id": "q2-tool",
+          "node_id": "q2",
+          "text": "这批预测的平均误差（MAE）是 0.212531 m，共 76,091 个匹配预测目标点。样本范围：本评估快照中已成熟且匹配的预测目标点；不是相互独立的洪水事件，也未限定为达到 Caution 的事件。 评估版本：2026-08-10T02:02:33.544996Z。这是事后评估，不是独立洪水事件统计，也不是这一次峰值的实际误差。",
+          "citations": [
+            {
+              "id": "evaluation:overall:45c11dfeeb39",
+              "locator": "C:\\UCL\\CASA0016\\FloodPred-Agent\\backup\\source_snapshot_2026-09-29\\forecast_evaluation\\output\\summary.json#point_metrics.mae_m",
+              "version": "2026-08-10T02:02:33.544996Z",
+              "source_type": "evaluation_report",
+              "quote": "事后批次评估 MAE 0.212531 m；样本范围：本评估快照中已成熟且匹配的预测目标点；不是相互独立的洪水事件，也未限定为达到 Caution 的事件。；匹配预测目标点 76091；版本生成时间 2026年8月10日 02:02（UTC）。MAE 是点级平均绝对误差，通俗地说，就是把这一批预测和实测逐个比较后平均差了多少米；不是某一次预测峰值的误差，也不是洪水事件检出率。 2026-08-10T02:02:33.544996Z",
+              "sha256": "45c11dfeeb39b3a44d86589fcecd2c54f65d8741846636a89182a587a666cff1",
+              "time_scope": "hindsight_evaluation",
+              "unit": "m"
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        },
+        {
+          "id": "q3-derive",
+          "node_id": "q3",
+          "text": "峰值是一条预测里的最高水位；MAE 是事后对一批预测算出的平均误差，两者不是同一层级，不能拿它当这次峰值的误差，也不能用它直接构造这次预测的置信区间。",
+          "citations": [
+            {
+              "id": "forecast:ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+              "locator": "归档 forecast_runs/forecast_points:run_id=ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+              "version": "2026-08-03T01:47:59.737191Z",
+              "source_type": "historical_forecast",
+              "quote": "回放时间 2026年8月3日 01:48（UTC）；当时预测未来最高水位 3.7832 m，预计到达时间 2026年8月3日 16:15（UTC）；内部等级 无风险。这是当时的预测，不是实测。 2026-08-03T16:15:00Z",
+              "sha256": null,
+              "time_scope": "known_at_replay",
+              "unit": "m"
+            },
+            {
+              "id": "evaluation:overall:45c11dfeeb39",
+              "locator": "C:\\UCL\\CASA0016\\FloodPred-Agent\\backup\\source_snapshot_2026-09-29\\forecast_evaluation\\output\\summary.json#point_metrics.mae_m",
+              "version": "2026-08-10T02:02:33.544996Z",
+              "source_type": "evaluation_report",
+              "quote": "事后批次评估 MAE 0.212531 m；样本范围：本评估快照中已成熟且匹配的预测目标点；不是相互独立的洪水事件，也未限定为达到 Caution 的事件。；匹配预测目标点 76091；版本生成时间 2026年8月10日 02:02（UTC）。MAE 是点级平均绝对误差，通俗地说，就是把这一批预测和实测逐个比较后平均差了多少米；不是某一次预测峰值的误差，也不是洪水事件检出率。 2026-08-10T02:02:33.544996Z",
+              "sha256": "45c11dfeeb39b3a44d86589fcecd2c54f65d8741846636a89182a587a666cff1",
+              "time_scope": "hindsight_evaluation",
+              "unit": "m"
+            }
+          ],
+          "status": "explicit_derivation",
+          "derivation": "一次预测的极值与批次绝对误差均值的定义／统计分母不同；不作单次误差或区间计算。"
+        }
+      ],
+      "rounds": 1,
+      "tools": 2,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "budget",
+      "question": "预测峰值和MAE的联系是什么？",
+      "expected": "partial_verified",
+      "actual": "partial_verified",
+      "expected_states": null,
+      "actual_states": [
+        "direct_support",
+        "not_supported",
+        "not_supported"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "目前能确认的局部结论是：\n\n当时预计最高水位是 3.7832 m，预计到达时间是 2026-08-03T16:15:00Z（UTC）。这是历史预测，不是实测或实时水情；run_id：ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38。【q1-tool → forecast:ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38】\n\n尚不能确认 q2‘预测峰值和MAE的联系是什么’：还没有取得MAE 评估指标（版本、样本范围、单位）。\n\n尚不能确认 q3‘预测峰值和MAE的联系是什么’：还没有取得MAE 评估指标（版本、样本范围、单位）；缺少直接比较／关系材料；不能仅凭两个相关段落生成关系结论。\n\n因此不能据此得出整个问题的完整结论。这里不是实时水情或官方警报。\n\n只读查询次数已用完，不再继续补查。",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "预测峰值和MAE的联系是什么",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-tool"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q2",
+          "question": "预测峰值和MAE的联系是什么",
+          "attribute": "meaning_and_scope",
+          "status": "not_supported",
+          "claim_ids": [],
+          "reasons": [
+            "还没有取得MAE 评估指标（版本、样本范围、单位）。"
+          ],
+          "checks": {
+            "locator": false,
+            "integrity": false,
+            "version": false,
+            "time_scope": false,
+            "units": false,
+            "requested_attribute": false
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "不支持"
+        },
+        {
+          "node_id": "q3",
+          "question": "预测峰值和MAE的联系是什么",
+          "attribute": "connection",
+          "status": "not_supported",
+          "claim_ids": [],
+          "reasons": [
+            "还没有取得MAE 评估指标（版本、样本范围、单位）。",
+            "缺少直接比较／关系材料；不能仅凭两个相关段落生成关系结论。"
+          ],
+          "checks": {
+            "locator": false,
+            "integrity": false,
+            "version": false,
+            "time_scope": false,
+            "units": false,
+            "requested_attribute": false
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "不支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-tool",
+          "node_id": "q1",
+          "text": "当时预计最高水位是 3.7832 m，预计到达时间是 2026-08-03T16:15:00Z（UTC）。这是历史预测，不是实测或实时水情；run_id：ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38。",
+          "citations": [
+            {
+              "id": "forecast:ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+              "locator": "归档 forecast_runs/forecast_points:run_id=ce9a940aa8807b10c85bc20754911bafdc8eca122053e6edc7273edd23efbb38",
+              "version": "2026-08-03T01:47:59.737191Z",
+              "source_type": "historical_forecast",
+              "quote": "回放时间 2026年8月3日 01:48（UTC）；当时预测未来最高水位 3.7832 m，预计到达时间 2026年8月3日 16:15（UTC）；内部等级 无风险。这是当时的预测，不是实测。 2026-08-03T16:15:00Z",
+              "sha256": null,
+              "time_scope": "known_at_replay",
+              "unit": "m"
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 1,
+      "stop_reason": "tool_limit",
+      "errors": [
+        "evaluation_metrics：BudgetExceeded: 调查已达到只读工具调用上限；停止补查。"
+      ]
+    },
+    {
+      "id": "no_original",
+      "question": "官方 Flood Alert 是什么？",
+      "expected": "fallback",
+      "actual": "fallback",
+      "expected_states": null,
+      "actual_states": [
+        "not_supported"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": null,
+      "fallback": "这次没有足够的已核验资料形成项目结论。缺少：q1：官方 Flood Alert 是什么（英国官方定义缺少可核对的原文。；只有链接／目录摘要，没有可核对的原文。）。补查没有取得能支持更多结论的资料，已停止重复查询。可以缩小问题或补充原始资料后再查。",
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "官方 Flood Alert 是什么",
+          "attribute": "meaning_and_scope",
+          "status": "not_supported",
+          "claim_ids": [],
+          "reasons": [
+            "英国官方定义缺少可核对的原文。",
+            "只有链接／目录摘要，没有可核对的原文。"
+          ],
+          "checks": {
+            "locator": false,
+            "integrity": false,
+            "version": false,
+            "time_scope": false,
+            "units": false,
+            "requested_attribute": false
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "不支持"
+        }
+      ],
+      "claims": [],
+      "rounds": 2,
+      "tools": 2,
+      "stop_reason": "no_support_gain",
+      "errors": []
+    },
+    {
+      "id": "official_half",
+      "question": "项目内部 Caution 和英国官方预警有什么区别？",
+      "expected": "partial_verified",
+      "actual": "partial_verified",
+      "expected_states": null,
+      "actual_states": [
+        "direct_support",
+        "not_supported",
+        "not_supported"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "目前能确认的局部结论是：\n\n项目内部 Caution（界面统一显示名称）表示：未来预测的最高水位在 4.20 m（含）到 4.43 m（不含）之间，接近项目洪水线。这是内部等级，不是官方警报。【q1-1 → internal-watch-2026-09-29】\n\n尚不能确认 q2‘项目内部 Caution 和英国官方预警有什么区别’：英国官方定义缺少可核对的原文；只有链接／目录摘要，没有可核对的原文。\n\n尚不能确认 q3‘项目内部 Caution 和英国官方预警有什么区别’：英国官方定义缺少可核对的原文；段落相关，但没有回答本项所求属性；缺少直接比较／关系材料；不能仅凭两个相关段落生成关系结论。\n\n因此不能据此得出整个问题的完整结论。这里不是实时水情或官方警报。\n\n补查没有取得能支持更多结论的资料，已停止重复查询。",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "项目内部 Caution 和英国官方预警有什么区别",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "internal-watch-2026-09-29"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q2",
+          "question": "项目内部 Caution 和英国官方预警有什么区别",
+          "attribute": "meaning_and_scope",
+          "status": "not_supported",
+          "claim_ids": [],
+          "reasons": [
+            "英国官方定义缺少可核对的原文。",
+            "只有链接／目录摘要，没有可核对的原文。"
+          ],
+          "checks": {
+            "locator": false,
+            "integrity": false,
+            "version": false,
+            "time_scope": false,
+            "units": false,
+            "requested_attribute": false
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "不支持"
+        },
+        {
+          "node_id": "q3",
+          "question": "项目内部 Caution 和英国官方预警有什么区别",
+          "attribute": "comparison",
+          "status": "not_supported",
+          "claim_ids": [],
+          "reasons": [
+            "英国官方定义缺少可核对的原文。",
+            "段落相关，但没有回答本项所求属性。",
+            "段落相关，但没有回答本项所求属性。",
+            "缺少直接比较／关系材料；不能仅凭两个相关段落生成关系结论。"
+          ],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": false,
+            "units": false,
+            "requested_attribute": false
+          },
+          "candidate_ids": [
+            "internal-watch-2026-09-29",
+            "thesis-risk-terms-p10"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "不支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-1",
+          "node_id": "q1",
+          "text": "项目内部 Caution（界面统一显示名称）表示：未来预测的最高水位在 4.20 m（含）到 4.43 m（不含）之间，接近项目洪水线。这是内部等级，不是官方警报。",
+          "citations": [
+            {
+              "id": "internal-watch-2026-09-29",
+              "locator": "C:\\UCL\\CASA0016\\FloodPred-Agent\\backup\\source_snapshot_2026-09-29\\cloud_flood_server\\README.md:13-20 § 风险等级",
+              "version": "source-snapshot-2026-09-29",
+              "source_type": "internal_project",
+              "quote": "## 风险等级\n\n- `0 No risk`: 未来 24h 最高水位低于 `4.20m`，ESP32 显示 `#`。\n- `1 Watch`: 最高水位 `4.20m <= level < 4.43m`，表示接近洪水线但还没到。\n- `2 Warning`: 最高水位达到 `4.43m`，或连续超过 `4.43m` 达到 1 小时。\n- `3 Severe`: 最高水位达到 `4.70m`，或第一次达到 `4.43m` 的 ETA 小于等于 2 小时，或连续超过 `4.43m` 达到 2 小时。\n\n`eta_minutes` 和 `next_flood_utc` 只按真正洪水线 `4.43m` 计算。Watch 只给 `watch_eta_minutes`。",
+              "sha256": "7cf36cd8079cfc831f35a48fde163759e654679cfae1ef528ab7f67d4dccd3cd",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 2,
+      "tools": 3,
+      "stop_reason": "no_support_gain",
+      "errors": []
+    },
+    {
+      "id": "date",
+      "question": "项目内部 Caution 是什么？",
+      "expected": "fallback",
+      "actual": "fallback",
+      "expected_states": null,
+      "actual_states": [
+        "not_supported"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": null,
+      "fallback": "这次没有足够的已核验资料形成项目结论。缺少：q1：项目内部 Caution 是什么（还没有取得回答此属性所需的证据。）。补查没有取得能支持更多结论的资料，已停止重复查询。可以缩小问题或补充原始资料后再查。",
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "项目内部 Caution 是什么",
+          "attribute": "meaning_and_scope",
+          "status": "not_supported",
+          "claim_ids": [],
+          "reasons": [
+            "还没有取得回答此属性所需的证据。"
+          ],
+          "checks": {
+            "locator": false,
+            "integrity": false,
+            "version": false,
+            "time_scope": false,
+            "units": false,
+            "requested_attribute": false
+          },
+          "candidate_ids": [],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "不支持"
+        }
+      ],
+      "claims": [],
+      "rounds": 2,
+      "tools": 2,
+      "stop_reason": "no_support_gain",
+      "errors": [
+        "knowledge：NoEvidence: 来源、版本或核对日期过滤后没有候选资料。"
+      ]
+    },
+    {
+      "id": "available_then",
+      "question": "项目内部 Caution 的规则当时已知吗？",
+      "expected": "fallback",
+      "actual": "fallback",
+      "expected_states": null,
+      "actual_states": [
+        "related_only"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": null,
+      "fallback": "这次没有足够的已核验资料形成项目结论。缺少：q1：项目内部 Caution 的规则当时已知吗（没有资料在回放时刻已可用的直接记录；核对／版本日期不能证明这一点。）。补查没有取得能支持更多结论的资料，已停止重复查询。可以缩小问题或补充原始资料后再查。",
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "项目内部 Caution 的规则当时已知吗",
+          "attribute": "meaning_and_scope",
+          "status": "related_only",
+          "claim_ids": [],
+          "reasons": [
+            "没有资料在回放时刻已可用的直接记录；核对／版本日期不能证明这一点。"
+          ],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": false,
+            "units": false,
+            "requested_attribute": false
+          },
+          "candidate_ids": [
+            "internal-watch-2026-09-29"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "仅相关"
+        }
+      ],
+      "claims": [],
+      "rounds": 2,
+      "tools": 2,
+      "stop_reason": "no_support_gain",
+      "errors": []
+    },
+    {
+      "id": "offline_live",
+      "question": "论文离线事件召回率多少？线上验证了洪水检出吗？",
+      "expected": "verified",
+      "actual": "verified",
+      "expected_states": [
+        "direct_support",
+        "direct_support"
+      ],
+      "actual_states": [
+        "direct_support",
+        "direct_support"
+      ],
+      "passed": true,
+      "failure_reason": null,
+      "answer": "论文离线历史事件评估的平均召回率是 86.19%，平均精确率是 81.50%。评估窗口有重叠，不是彼此独立的年度实验；这些离线结果不能当成线上检出能力。【q1-1 → thesis-offline-events-p9-p13】\n\n部署期有 76,091 个匹配预测点，但实测没有达到 4.20 m Caution 阈值。因此这段数据不能证明线上洪水事件检出能力；没有报警不能据此解释为洪水检出表现好。【q2-1 → thesis-live-limit-p14-p16】",
+      "fallback": null,
+      "questions": [
+        {
+          "node_id": "q1",
+          "question": "论文离线事件召回率多少",
+          "attribute": "value",
+          "status": "direct_support",
+          "claim_ids": [
+            "q1-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "thesis-offline-events-p9-p13"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        },
+        {
+          "node_id": "q2",
+          "question": "线上验证了洪水检出吗",
+          "attribute": "meaning_and_scope",
+          "status": "direct_support",
+          "claim_ids": [
+            "q2-1"
+          ],
+          "reasons": [],
+          "checks": {
+            "locator": true,
+            "integrity": true,
+            "version": true,
+            "time_scope": true,
+            "units": true,
+            "requested_attribute": true
+          },
+          "candidate_ids": [
+            "thesis-live-limit-p14-p16"
+          ],
+          "conflicts": [],
+          "excluded": false,
+          "status_label": "直接支持"
+        }
+      ],
+      "claims": [
+        {
+          "id": "q1-1",
+          "node_id": "q1",
+          "text": "论文离线历史事件评估的平均召回率是 86.19%，平均精确率是 81.50%。评估窗口有重叠，不是彼此独立的年度实验；这些离线结果不能当成线上检出能力。",
+          "citations": [
+            {
+              "id": "thesis-offline-events-p9-p13",
+              "locator": "Dissertaion_Floodpred_V3_HaoyuHu.pdf PDF文件页 9, 13 | 摘录 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\thesis\\offline_event_eval.md:1-7 § 3.4 Evaluation Design; 4.1 Offline Results",
+              "version": "final-dissertation-2026-08-20",
+              "source_type": "thesis",
+              "quote": "Source: Haoyu Hu, FloodPred dissertation, PDF physical pages 9 and 13 (sections 3.4 and 4.1).\n\nThe same evaluation is repeated across ten randomly selected one-year windows. Each window contains 35,040 consecutive observations, corresponding to one year of 15-minute data. A fixed random seed of 2026 makes the window selection reproducible.\nSince the complete dataset covers less than three years, some selected windows overlap. The experiment is therefore used to examine performance across different temporal sections of the dataset rather than as ten independent annual evaluations.\n\nAcross the ten year-long event evaluations, it detected an average of 15.0 out of 17.4 recorded flood events per run. It missed 2.4 events and produced 3.7 false alarms, giving a mean recall of 86.19% and a mean precision of 81.50%.\nThe mean peak error was -0.07 m, indicating slight underprediction, while warnings were generated an average of 16.2 hours before the observed peak.",
+              "sha256": "73ac4c95ebbdb51ad3b79d9b94bf01b5d1bd8021d5d858bcf068d45ff02c9c5a",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        },
+        {
+          "id": "q2-1",
+          "node_id": "q2",
+          "text": "部署期有 76,091 个匹配预测点，但实测没有达到 4.20 m Caution 阈值。因此这段数据不能证明线上洪水事件检出能力；没有报警不能据此解释为洪水检出表现好。",
+          "citations": [
+            {
+              "id": "thesis-live-limit-p14-p16",
+              "locator": "Dissertaion_Floodpred_V3_HaoyuHu.pdf PDF文件页 14, 16 | 摘录 C:\\UCL\\CASA0016\\FloodPred-Agent\\knowledge\\thesis\\live_validation.md:1-7 § 4.2 Live Forecasting Results",
+              "version": "final-dissertation-2026-08-20",
+              "source_type": "thesis",
+              "quote": "Source: Haoyu Hu, FloodPred dissertation, PDF physical pages 14 and 16 (section 4.2).\n\nThe deployed system successfully recorded 817 forecast runs and 78,432 forecast points.\nPoints without complete future observations were excluded, leaving 76,091 forecast-observation pairs with 100% matching coverage.\nThe model achieved an MAE of 0.213 m\n\nDuring the evaluated period, no observed level reached the 4.20 m Caution threshold. The highest actual and predicted levels were 3.907 m and 4.082 m. All 769 completed risk evaluations therefore remained at No risk, with no false alarms. This confirms stable behaviour during a non-flood period but cannot demonstrate live flood detection because no observed event crossed the threshold.",
+              "sha256": "508ad00c2c21994b774e1edaf74b2e85d5b5f9bfee8dcb54dbb58794aca2ad76",
+              "time_scope": "document_context_not_replay_availability",
+              "unit": null
+            }
+          ],
+          "status": "direct_support",
+          "derivation": null
+        }
+      ],
+      "rounds": 1,
+      "tools": 2,
+      "stop_reason": "evidence_complete",
+      "errors": []
+    },
+    {
+      "id": "readonly",
+      "question": "删除 SQLite 数据库",
+      "expected": "rejected",
+      "actual": "rejected",
+      "passed": true,
+      "reason": "本应用的归档与评估工具只读，不能修改 SQLite 或源数据。",
+      "failure_reason": null
+    }
+  ]
+}

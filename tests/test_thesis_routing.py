@@ -62,7 +62,9 @@ class ThesisRoutingTests(unittest.TestCase):
         result = run_query(question, use_llm=True, client=fake, audit_log=None)
         self.assertEqual(result.plan.knowledge_concepts, ("internal_warning",))
         self.assertEqual(fake.seen_questions, [question])
-        self.assertIn("4.43", result.knowledge[0].explanation)
+        self.assertIsNone(result.knowledge[0].explanation)
+        self.assertIn("4.43", result.knowledge[0].fact)
+        self.assertTrue(result.verified_claims)
         self.assertFalse(result.errors)
 
     def test_deepseek_classifier_rejects_unlisted_or_unquoted_intent(self) -> None:

@@ -17,7 +17,10 @@ from typing import Callable
 from .archive import DEFAULT_DB
 from .knowledge import DEFAULT_CATALOG, ROOT
 from .rag import ChatClient, DeepSeekClient, IntentPlan, RAGError
-from .question_graph import excluded_concepts, excluded_routes
+from .evidence_gate import (CONFLICT, assess_evidence, finalize_answer,
+                            missing_items, _topics)
+from .hybrid_retrieval import (QueryVariant, RetrievalRequest, hybrid_search, make_request,
+                               merge_candidates, safe_trace)
 from .replay import DEFAULT_SONAR_DB
 from .router import (
     DEFAULT_AUDIT_LOG, QueryResult, RoutePlan, UnsupportedRoute, _QUERIES,
@@ -78,60 +81,6 @@ class _Budget:
             provider.request_timeout_seconds = min(20.0, max(1.0, self.remaining()))
 
 
-def _relation_cues(question: str) -> bool:
-    q = question.casefold()
-    return any(cue in q for cue in ("区别", "关系", "联系", "比较", "为什么", "原因", "是否一样", "分别", "一起"))
-
-
-def _relevant_concept(question: str, concept: str) -> bool:
-    """A model cannot add a topic with no domain cue in the user's request."""
-    q = question.casefold().replace(" ", "")
-    cues = {
-        "internal_watch": ("watch", "caution", "留意", "观察等级"),
-        "internal_warning": ("warning", "警告等级", "洪水线"),
-        "official_flood_alert": ("官方", "floodalert", "environmentagency"),
-        "highwater_evaluation_limit": ("局限", "限制", "高水位", "召回", "检出"),
-        "thesis_forecast_design": ("论文", "七天", "96个", "patchtst"),
-        "thesis_risk_terms": ("论文", "阈值", "等级"),
-        "thesis_offline_events": ("离线", "论文", "事件召回"),
-        "thesis_live_limit": ("线上", "部署", "真实洪水", "检出"),
-        "thesis_rapid_rise": ("快速上涨", "快涨", "突然上涨", "滞后"),
-        "thesis_model_design": ("patchtst", "模型结构", "分类头"),
-        "housemill_heritage": ("housemill", "三磨坊", "历史建筑"),
-        "housemill_flood_context": ("housemill", "潮汐", "木梁"),
-        "housemill_old_sensor": ("旧传感器", "旧声纳", "旧监测", "duncan", "水位仪"),
-        "housemill_study_findings": ("136", "42", "53分钟", "旧研究"),
-        "housemill_volunteer_need": ("志愿者", "旧界面", "触水时长"),
-        "housemill_project_connection": ("floodpred", "旧项目", "旧系统", "承接"),
-    }
-    return concept in cues and any(cue in q for cue in cues[concept])
-
-
-def _relevant_route(question: str, route: str) -> bool:
-    q = question.casefold().replace(" ", "")
-    cues = {
-        "archived_forecast": ("预测峰值", "预测最高", "当时预测", "最高水位", "run_id"),
-        "historical_water": ("历史水位", "当时水位", "实测水位", "观测水位", "声纳水位"),
-        "evaluation_metrics": ("mae", "误差", "评估", "准不准", "模型表现"),
-    }
-    return route in cues and any(cue in q for cue in cues[route])
-
-
-def _deterministic_gaps(question: str, result: QueryResult) -> tuple[str, ...]:
-    """Only narrow, explainable recovery rules; no guessed numerical facts."""
-    q = question.casefold()
-    gaps: list[str] = []
-    if ("官方" in q and any(cue in q for cue in ("内部", "caution", "watch", "warning"))
-        and _relation_cues(question) and "official_flood_alert" not in result.plan.knowledge_concepts):
-        gaps.append("official_flood_alert")
-    if (any(cue in q for cue in ("旧传感器", "旧监测", "旧系统", "早期监测"))
-        and any(cue in q for cue in ("floodpred", "本项目", "预测项目"))
-        and _relation_cues(question)
-        and "housemill_project_connection" not in result.plan.knowledge_concepts):
-        gaps.append("housemill_project_connection")
-    return tuple(gaps)
-
-
 def _attempted(plan: RoutePlan) -> set[str]:
     return {step for step in plan.steps if step != "knowledge"} | {f"knowledge:{item}" for item in plan.knowledge_concepts}
 
@@ -150,7 +99,6 @@ def _merge(target: QueryResult, addition: QueryResult) -> None:
     target.errors.extend(addition.errors)
     target.warnings.extend(addition.warnings)
     target.trace.extend(addition.trace)
-    from .hybrid_retrieval import merge_candidates
     merge_candidates(target.document_candidates, addition.document_candidates)
     target.retrieval_runs.extend(addition.retrieval_runs)
     order = ("archived_forecast", "historical_water", "evaluation_metrics", "knowledge")
@@ -161,118 +109,96 @@ def _merge(target: QueryResult, addition: QueryResult) -> None:
                             target.plan.evaluation_scope or addition.plan.evaluation_scope)
 
 
-def _evidence_gaps(result: QueryResult) -> list[str]:
-    """Requested result coverage, not vector similarity or model confidence."""
-    gaps = []
-    if "archived_forecast" in result.plan.steps and result.forecast is None:
-        gaps.append("归档预测")
-    if "historical_water" in result.plan.steps and result.water is None:
-        gaps.append("历史水位")
-    if "evaluation_metrics" in result.plan.steps and result.evaluation is None:
-        gaps.append("评估指标")
-    if "knowledge" in result.plan.steps and len(result.knowledge) < len(result.plan.knowledge_concepts):
-        gaps.append("文档依据")
-    for concept in _deterministic_gaps(result.question, result):
-        label = {"official_flood_alert": "英国官方定义",
-                 "housemill_project_connection": "旧项目承接资料"}.get(concept)
-        if label and label not in gaps:
-            gaps.append(label)
-    return gaps
+def _gap_request(result: QueryResult, row, round_number: int) -> RetrievalRequest:
+    node = next(node for node in result.question_graph.nodes if node.id == row.node_id)
+    request = make_request(result.question, fragment=node.anchors[0].text, node=node)
+    subjects = " ".join(span.text for span in node.subjects)
+    if node.question_type in ("relation", "comparison"):
+        focus = ("直接关系 采集实现 承接 开源监测" if round_number == 2 else
+                 "论文原文 系统实现 关系依据 不是同一套设备")
+    elif "official_flood_alert" in _topics(node):
+        focus = "官方定义 原文 适用地区 发布机构" if round_number == 2 else "Flood Alert 原文具体章节"
+    else:
+        focus = f"{node.requested_attribute} 原文具体记载" if round_number == 2 else "属性 章节 原文边界"
+    # This is a gap query, not an answer or a fabricated relationship. Raw input
+    # and the exact node fragment remain the primary channels.
+    query = QueryVariant("gap_refinement", subjects + " " + node.anchors[0].text + " " + focus, 1.0)
+    return RetrievalRequest(request.original, request.fragment, (*request.queries[:4], query),
+                            request.node_id, request.source_types)
 
 
-def _resolve_incomplete_result(result: QueryResult) -> None:
-    """Use verified residual facts first; abstain only when none can be used."""
-    if not result.plan.steps:
-        return
-    reason = result.investigation_stop_reason
-    budget_stop = reason in {"tool_limit", "time_limit", "round_limit", "llm_limit"}
-    gaps = _evidence_gaps(result)
-    if result.answer_text and not result.errors and not gaps:
-        return
-    if not budget_stop and not result.errors and not gaps:
-        return
-    if gaps and reason == "evidence_complete":
-        reason = result.investigation_stop_reason = "partial_evidence"
-    reason_text = {"tool_limit": "只读查询次数", "time_limit": "调查时间", "round_limit": "调查轮数",
-                   "llm_limit": "DeepSeek 调用次数"}.get(reason)
-    limitation = f"且已达到{reason_text}上限" if reason_text else "相关取证仍未完成"
-    facts = [item for item in result.evidence_bundle if item.get("id") and item.get("fact")]
-    if facts:
-        # This is deliberately extractive. It never asks an LLM to complete a
-        # missing relation after the budget has stopped the investigation.
-        parts = [f"【{item['id']}】{item['fact']}" for item in facts]
-        missing = "、".join(gaps) if gaps else "剩余核对步骤"
-        result.answer_text = (
-            "目前能确认的局部结论是：" + "；".join(parts) + "。"
-            f"但{missing}仍未确认，{limitation}；"
-            "因此不能据此得出整个问题的完整结论。这里不是实时水情或官方警报。"
-        )
-        result.answer_status = "partial_verified"
-        result.fallback_text = None
-        result.trace.append({"step": "partial_answer", "status": "verified_subset", "reason": reason,
-                             "missing": ",".join(gaps), "citation_ids": ",".join(item["id"] for item in facts)})
-        return
-    missing = "、".join(gaps) if gaps else "可核验资料"
-    result.fallback_text = (
-        f"这次没有足够的已核验资料形成结论：{missing}未取得，{limitation}。"
-        "请缩小问题或核对来源后再查；这里不是实时水情或官方警报。"
-    )
-    result.answer_text = None
-    result.answer_status = "fallback"
-    result.trace.append({"step": "safe_fallback", "status": "no_verified_evidence", "reason": reason,
-                         "missing": ",".join(gaps)})
+def _check_fingerprint(result: QueryResult) -> tuple:
+    return tuple((row.node_id, row.status, tuple(row.claim_ids), str(row.conflicts))
+                 for row in result.question_evidence)
 
 
-def _followup_plan(
-    question: str, result: QueryResult, attempted: set[str], provider: object | None,
-    budget: _Budget, use_llm: bool,
-) -> RoutePlan | None:
-    proposals = list(_deterministic_gaps(question, result))
-    proposed_steps: tuple[str, ...] = ()
-    proposed_scope: str | None = None
+def _fill_gaps(result: QueryResult, round_number: int, budget: _Budget, *, catalog: Path,
+               root: Path, forecast_db: Path, sonar_db: Path, provider, use_llm: bool,
+               attempted: set[str]) -> bool:
+    gaps = [row for row in missing_items(result) if row.status != CONFLICT]
+    if not gaps:
+        return False
+    # A model can suggest which MISSING topics to inspect first, never approve
+    # evidence or add unrelated tools. It does not choose arbitrary query text.
     reviewer = getattr(provider, "review", None)
-    if (use_llm and callable(reviewer) and _relation_cues(question)
-        and budget.llm_calls < budget.limits.max_llm_calls - 1):
+    if use_llm and callable(reviewer) and budget.llm_calls < budget.limits.max_llm_calls - 1:
         try:
             budget.reserve_llm(provider)
-            review: IntentPlan = reviewer(
-                question, result.evidence_bundle, sorted(attempted), tuple(_QUERIES),
-            )
-            if review.mode == "project":
-                proposals.extend(review.concepts)
-                proposed_steps = review.steps
-                proposed_scope = review.evaluation_scope
-            result.trace.append({"step": "gap_review", "status": "ok", "proposed_concepts": ",".join(review.concepts), "proposed_tools": ",".join(review.steps)})
-        except (RAGError, BudgetExceeded, ValueError, TypeError) as exc:
+            checked_facts = [{"id": claim.id, "fact": claim.text, "status": claim.status,
+                              "source": ",".join(c.id for c in claim.citations)} for claim in result.verified_claims]
+            review = reviewer(result.question, checked_facts, sorted(attempted), tuple(_QUERIES))
+            priorities = set(review.concepts) if isinstance(review, IntentPlan) and review.mode == "project" else set()
+            gaps.sort(key=lambda row: not bool(priorities & _topics(next(n for n in result.question_graph.nodes if n.id == row.node_id))))
+            result.trace.append({"step": "gap_review", "status": "priority_only", "nodes": ",".join(row.node_id for row in gaps)})
+        except (RAGError, ValueError, TypeError, BudgetExceeded) as exc:
+            result.warnings.append(f"缺口排序未完成（{type(exc).__name__}）；仍使用程序识别的缺口。")
             if isinstance(exc, BudgetExceeded):
-                result.errors.append(str(exc))
-                result.trace.append({"step": "gap_review", "status": "budget_stop", "error_type": type(exc).__name__})
-                return None
-            result.warnings.append(f"缺口检查未完成：{exc}；仍使用本地规则。")
-            result.trace.append({"step": "gap_review", "status": "failed", "error_type": type(exc).__name__})
-    suppressed_topics = excluded_concepts(result.question_graph) if result.question_graph else set()
-    suppressed_routes = excluded_routes(result.question_graph) if result.question_graph else set()
-    concepts = [item for item in dict.fromkeys(proposals)
-                if item in _QUERIES and item not in suppressed_topics
-                and _relevant_concept(question, item) and f"knowledge:{item}" not in attempted]
-    routes = [item for item in dict.fromkeys(proposed_steps)
-              if item in ("archived_forecast", "historical_water", "evaluation_metrics")
-              and item not in suppressed_routes and _relevant_route(question, item) and item not in attempted]
-    available = budget.limits.max_tool_calls - budget.tool_calls
-    if available <= 0 and (routes or concepts):
-        budget.exceeded = "tool_limit"
-        result.errors.append("仍有相关证据缺口，但已达到只读工具调用上限；不继续补查。")
-        return None
-    routes = routes[:available]
-    concepts = concepts[:max(0, available - len(routes))]
-    if not routes and not concepts:
-        return None
-    if "evaluation_metrics" in routes:
-        proposed_scope = "high_water_2m" if any(cue in question.casefold() for cue in ("高水位", "2米以上", "2m以上")) else "overall"
-    else:
-        proposed_scope = None
-    ordered = tuple(item for item in ("archived_forecast", "historical_water", "evaluation_metrics") if item in routes)
-    return RoutePlan(ordered + (("knowledge",) if concepts else ()), tuple(concepts), proposed_scope)
+                return False
+    executed = False
+    for row in gaps[:3]:
+        budget.check_time()
+        node = next(n for n in result.question_graph.nodes if n.id == row.node_id)
+        subject = " ".join(s.text.casefold() for s in node.subjects)
+        numeric_tool = ("evaluation_metrics" if ("mae" in subject or "平均绝对误差" in subject) else
+                        "archived_forecast" if "预测峰值" in subject else
+                        "historical_water" if any(w in subject for w in ("历史水位", "实测水位", "当时水位")) else None)
+        if numeric_tool:
+            # Do not retry failed archive/metric reads with relaxed timestamps.
+            if numeric_tool in attempted:
+                continue
+            scope = (result.plan.evaluation_scope or "overall") if numeric_tool == "evaluation_metrics" else None
+            plan = RoutePlan((numeric_tool,), (), scope)
+            extra = run_query(result.question, as_of_utc=result.as_of_utc,
+                              knowledge_checked_on_or_before=result.knowledge_checked_on_or_before,
+                              forecast_db=forecast_db, sonar_db=sonar_db, catalog=catalog, root=root,
+                              forced_plan=plan, audit_log=None, generate_answer=False, tool_guard=budget.reserve_tool)
+            _merge(result, extra)
+            attempted.add(numeric_tool)
+            executed = True
+            continue
+        request = _gap_request(result, row, round_number)
+        signature = hashlib.sha256(repr((row.node_id, request.source_types, request.queries)).encode()).hexdigest()
+        if signature in attempted:
+            continue
+        budget.reserve_tool("knowledge:gap_search")
+        attempted.add(signature)
+        executed = True
+        try:
+            candidates = hybrid_search(request, checked_on_or_before=result.knowledge_checked_on_or_before,
+                                       catalog=catalog, root=root, allow_conflicts=True)
+            merge_candidates(result.document_candidates, candidates.hits)
+            debug = candidates.to_debug()
+            debug["investigation_round"] = round_number
+            result.retrieval_runs.append(debug)
+            trace = safe_trace(candidates)
+            trace.update(round=str(round_number), reason="unmet_question_attribute")
+            result.trace.append(trace)
+        except Exception as exc:
+            result.warnings.append(f"{row.node_id} 补查未取得可用原文（{type(exc).__name__}）。")
+            result.trace.append({"step": "gap_search", "node_id": row.node_id, "status": "failed",
+                                 "round": str(round_number), "error_type": type(exc).__name__})
+        budget.check_time()
+    return executed
 
 
 def run_investigation(
@@ -332,47 +258,43 @@ def run_investigation(
         for round_number in range(2, limits.max_rounds + 1):
             if budget.exceeded:
                 break
+            gaps = missing_items(result)
+            if not gaps:
+                result.investigation_stop_reason = "evidence_complete"
+                break
+            if all(row.status == CONFLICT for row in gaps):
+                result.investigation_stop_reason = "source_conflict"
+                break
+            before = _check_fingerprint(result)
             try:
                 budget.check_time()
+                executed = _fill_gaps(result, round_number, budget, catalog=catalog, root=root,
+                                      forecast_db=forecast_db, sonar_db=sonar_db, provider=provider,
+                                      use_llm=llm_available, attempted=attempted)
             except BudgetExceeded as exc:
                 result.errors.append(str(exc))
                 break
-            followup = _followup_plan(question, result, attempted, provider, budget, llm_available)
-            if followup is None:
-                result.investigation_stop_reason = "evidence_complete" if not result.errors else "partial_evidence"
+            if not executed:
+                result.investigation_stop_reason = "partial_evidence"
                 break
-            extra = run_query(
-                question, as_of_utc=as_of_utc, knowledge_checked_on_or_before=knowledge_checked_on_or_before,
-                use_llm=False,
-                forecast_db=forecast_db, sonar_db=sonar_db, catalog=catalog, root=root,
-                audit_log=None, forced_plan=followup, generate_answer=False,
-                tool_guard=budget.reserve_tool,
-            )
-            attempted.update(_attempted(followup))
-            _merge(result, extra)
             result.investigation_rounds = round_number
-            result.trace.append({"step": "investigation_round", "round": str(round_number), "status": "executed", "plan": ",".join(followup.steps), "concepts": ",".join(followup.knowledge_concepts)})
+            assess_evidence(result, root=root)
+            result.trace.append({"step": "investigation_round", "round": str(round_number), "status": "gap_only",
+                                 "missing_nodes": ",".join(row.node_id for row in missing_items(result))})
+            if _check_fingerprint(result) == before:
+                result.investigation_stop_reason = "no_support_gain"
+                break
         else:
             result.investigation_stop_reason = "round_limit"
     if budget.exceeded:
         result.investigation_stop_reason = budget.exceeded
-    if result.plan.steps and llm_available and result.evidence_bundle and not result.errors and not budget.exceeded:
-        synthesize = getattr(provider, "synthesize", None)
-        if callable(synthesize):
-            try:
-                budget.reserve_llm(provider)
-                answer = synthesize(question, result.evidence_bundle)
-                budget.check_time()
-                result.answer_text = answer
-                result.trace.append({"step": "grounded_reply", "status": "ok", "citation_ids": ",".join(item["id"] for item in result.evidence_bundle)})
-            except (RAGError, BudgetExceeded) as exc:
-                result.errors.append(f"证据整理未完成：{exc}；仍展示已核验资料。")
-                result.trace.append({"step": "grounded_reply", "status": "failed", "error_type": type(exc).__name__})
+    if not missing_items(result) and result.plan.steps and not budget.exceeded:
+        result.investigation_stop_reason = "evidence_complete"
+    finalize_answer(result, root=root,
+                    provider=provider if llm_available and not budget.exceeded else None,
+                    reserve_llm=budget.reserve_llm)
     if budget.exceeded:
         result.investigation_stop_reason = budget.exceeded
-    _resolve_incomplete_result(result)
-    if result.answer_status == "candidate_only" and not result.evidence_bundle:
-        result.investigation_stop_reason = "candidates_only"
     traces = getattr(provider, "reasoning_traces", None)
     if isinstance(traces, list):
         result.reasoning_traces = list(traces)

@@ -40,14 +40,17 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(plan.knowledge_concepts, ("internal_watch",))
         result = run_query("项目内部 Caution 是什么", audit_log=None)
         self.assertEqual(result.knowledge[0].citation_id, "internal-watch-2026-09-29")
-        self.assertIn("Watch", result.knowledge[0].fact)
+        self.assertIn("Watch", result.verified_claims[0].citations[0].quote)
         self.assertIn("Caution", volunteer_fact(result.knowledge[0].fact))
 
     def test_official_guidance_is_separate_static_knowledge_route(self):
         result = run_query("官方 Flood Alert 是什么", audit_log=None)
         self.assertEqual(result.plan.knowledge_concepts, ("official_flood_alert",))
-        self.assertEqual(result.knowledge[0].source_type, "official_public_guidance")
-        self.assertIn("www.gov.uk", result.knowledge[0].locator)
+        self.assertEqual(result.answer_status, "fallback")
+        self.assertFalse(result.knowledge)
+        self.assertTrue(any(hit.record["source_type"] == "official_public_guidance"
+                            and "www.gov.uk" in hit.locator for hit in result.document_candidates))
+        self.assertIn("原文", result.fallback_text)
         with self.assertRaises(UnsupportedRoute):
             run_query("现在的官方 Flood Alert 是什么", audit_log=None)
 
@@ -131,7 +134,9 @@ class PlannerTests(unittest.TestCase):
     def test_missing_forecast_prevents_grounded_synthesis(self):
         fake = FakePlanner(IntentPlan("project", ("archived_forecast", "evaluation_metrics"), (), "overall"))
         result = run_query("预测峰值和mae的联系", use_llm=True, client=fake, audit_log=None)
-        self.assertIsNone(result.answer_text)
+        self.assertEqual(result.answer_status, "partial_verified")
+        self.assertIn("MAE", result.answer_text)
+        self.assertIn("尚不能确认", result.answer_text)
         self.assertIsNone(fake.evidence_seen)
         self.assertTrue(result.errors)
 

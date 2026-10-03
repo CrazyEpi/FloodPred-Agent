@@ -26,6 +26,7 @@ from .read_tools import (
     evaluation_metrics_tool,
     historical_water_tool,
 )
+from .evidence_gate import QuestionEvidence, VerifiedClaim
 from .replay import DEFAULT_SONAR_DB, Observation, ReplayCard
 
 
@@ -84,6 +85,9 @@ class QueryResult:
     question_graph: QuestionGraph | None = None
     document_candidates: list[Hit] = field(default_factory=list, repr=False)
     retrieval_runs: list[dict] = field(default_factory=list, repr=False)
+    question_evidence: list[QuestionEvidence] = field(default_factory=list, repr=False)
+    verified_claims: list[VerifiedClaim] = field(default_factory=list, repr=False)
+    source_rejections: dict[str, str] = field(default_factory=dict, repr=False)
 
 
 DEFAULT_AUDIT_LOG = ROOT / "logs" / "requests.jsonl"
@@ -429,7 +433,7 @@ def run_query(
     graph_batch_done = False
     def collect_candidates(request):
         candidates = hybrid_search(request, checked_on_or_before=knowledge_checked_on_or_before,
-                                   catalog=catalog, root=root)
+                                   catalog=catalog, root=root, allow_conflicts=True)
         merge_candidates(result.document_candidates, candidates.hits)
         result.retrieval_runs.append(candidates.to_debug())
         result.trace.append(safe_trace(candidates))
@@ -440,8 +444,13 @@ def run_query(
         if graph_batch_done:
             return
         graph_batch_done = True
+        # Relationship endpoints can share one span but have different subject
+        # focuses. Deduplicate actual query sets, not just the span.
+        def signature(request):
+            return (request.source_types, tuple(query.text for query in request.queries
+                                               if query.role != "supplementary"))
         extra_requests = [request for request in graph_requests
-                          if request.fragment != primary.fragment or request.source_types != primary.source_types]
+                          if signature(request) != signature(primary)]
         for request in extra_requests[:5]:
             try:
                 collect_candidates(request)
@@ -489,6 +498,9 @@ def run_query(
                                 for record in (hit.record, *hit.equivalent_records)
                                 if record["concept"] == concept]
                     if len(relevant) != 1:
+                        if len(relevant) > 1:
+                            result.warnings.append(f"{concept} 有多个来源版本；保留候选，不自行裁决。")
+                            continue
                         if any(item["concept"] == concept for item in candidates.quarantined):
                             raise SourceIntegrityError(f"{concept} 的目标来源缺失或未通过哈希检查。")
                         raise NoEvidence(f"{concept} 没有唯一、已核验的知识记录。")
@@ -513,7 +525,7 @@ def run_query(
                     ))
                     source_note = "；原始术语 Watch，界面别名 Caution" if "Watch" in hit.record["summary"] else ""
                     evidence_bundle.append({"id": hit.record["id"], "kind": hit.record["source_type"], "fact": volunteer_fact(hit.record["summary"]), "source": f"{hit.record['title']} § {hit.record['section']}{source_note}", "excerpt": hit.excerpt or ""})
-                    result.trace.append({"step": step, "status": "ok", "citation_id": hit.record["id"], "source_type": hit.record["source_type"], "source_locator": hit.locator, "version": hit.record["version"], "llm_status": "accepted" if explanation else ("link_only" if use_llm and not hit.excerpt else ("failed" if use_llm else "disabled"))})
+                    result.trace.append({"step": step, "status": "ok", "citation_id": hit.record["id"], "source_type": hit.record["source_type"], "source_locator": hit.locator, "version": hit.record["version"], "llm_status": "accepted" if explanation else ("link_only" if use_llm and not hit.excerpt else ("deferred_to_claim_gate" if use_llm and (callable(getattr(provider, "select_claims", None)) or callable(getattr(provider, "synthesize", None))) else ("failed" if use_llm else "disabled")))})
         except (OSError, ValueError, KeyError, TypeError) as exc:
             result.errors.append(f"{step}：{exc}")
             result.trace.append({"step": step, "status": "error", "error_type": type(exc).__name__})
@@ -522,14 +534,10 @@ def run_query(
             result.errors.append(f"{step}：{type(exc).__name__}: {exc}")
             result.trace.append({"step": step, "status": "error", "error_type": type(exc).__name__})
     result.evidence_bundle = evidence_bundle
-    synthesize = getattr(provider, "synthesize", None)
-    if generate_answer and use_llm and callable(synthesize) and evidence_bundle and not result.errors:
-        try:
-            result.answer_text = synthesize(question, evidence_bundle)
-            result.trace.append({"step": "grounded_reply", "status": "ok", "citation_ids": ",".join(item["id"] for item in evidence_bundle)})
-        except RAGError as exc:
-            result.errors.append(f"DeepSeek 没能把证据整理成回答：{exc}；下面仍保留查到的原始结果。")
-            result.trace.append({"step": "grounded_reply", "status": "error"})
+    from .evidence_gate import assess_evidence, finalize_answer
+    assess_evidence(result, root=root)
+    if generate_answer and result.plan.steps:
+        finalize_answer(result, root=root, provider=provider if use_llm else None)
     if isinstance(reasoning_store, list):
         result.reasoning_traces = list(reasoning_store)
     if audit_log is not None:

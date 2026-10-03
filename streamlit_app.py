@@ -38,7 +38,7 @@ def show_result(result: QueryResult) -> None:
                 if result.answer_status == "partial_verified":
                     st.caption("这是根据已核验残余资料整理的局部结论，不是整个问题的完整答案；缺失部分没有推测或补写。")
                 else:
-                    st.caption("这段话由 DeepSeek 根据下方已核对的资料整理；重要数据请以原始卡片和可信来源为准")
+                    st.caption("只整理逐项核对通过的结论；每句话后面的编号对应‘证据’里的原文。")
             else:
                 st.write(result.answer_text)
                 if result.response_mode == "general":
@@ -90,6 +90,27 @@ def show_result(result: QueryResult) -> None:
 
     with evidence_tab:
         st.subheader("这次回答依据什么？")
+        if result.question_evidence:
+            st.write("**问题有没有查清楚？**")
+            st.table([{"问题": row.node_id + " · " + row.question,
+                       "证据状态": row.to_dict()["status_label"],
+                       "还缺什么": "；".join(row.reasons) or "本项已通过核对"}
+                      for row in result.question_evidence if not row.excluded])
+            for row in result.question_evidence:
+                if row.conflicts:
+                    st.warning(f"{row.node_id} 的资料有冲突，没有替你选择某个版本。")
+                    st.json(row.conflicts)
+        for claim in result.verified_claims:
+            with st.expander(f"结论 {claim.id} · {claim.text}"):
+                if claim.derivation:
+                    st.caption("有限推导依据：" + claim.derivation)
+                for citation in claim.citations:
+                    st.write(f"引用：`{citation.id}` · 版本：`{citation.version}`")
+                    st.code(citation.locator, language=None)
+                    st.caption(f"{citation.source_type} · 时间范围：{citation.time_scope} · 单位：{citation.unit or '文档说明'}")
+                    if citation.sha256:
+                        st.caption("SHA-256：" + citation.sha256)
+                    st.code(citation.quote, language=None)
         if result.forecast:
             card = result.forecast
             with st.container(border=True):
@@ -120,7 +141,7 @@ def show_result(result: QueryResult) -> None:
                     st.write(f"本地源文件 SHA-256：`{item.source_sha256}`")
                 if item.retrieval_methods:
                     st.caption(f"检索方式：{', '.join(item.retrieval_methods)}。相似度只是候选排序，不是事实支持证明。")
-                st.write(f"来源目录的原始摘要：{item.fact}")
+                st.write(f"已核验的来源说明：{item.fact}")
                 if "Watch" in item.fact:
                     st.caption("显示名称 Caution 对应此来源中的 Watch；源文件和引用 ID 保留原词，不能把别名当成原文。")
         if result.document_candidates:
@@ -144,6 +165,9 @@ def show_result(result: QueryResult) -> None:
                         st.code(hit.excerpt, language=None)
                     else:
                         st.write("此条只有官方链接和目录摘要，没有本地网页原文快照。")
+                    for item_id in paragraph_ids:
+                        if item_id in result.source_rejections:
+                            st.warning(result.source_rejections[item_id])
         if not any((result.forecast, result.water, result.evaluation, result.knowledge, result.document_candidates)):
             st.info("本次是普通对话或澄清问题，没有调用项目数据和资料。" if result.answer_text else "本次没有通过验证的证据。")
 
@@ -159,6 +183,8 @@ def show_result(result: QueryResult) -> None:
             "knowledge_concepts": result.plan.knowledge_concepts,
             "evaluation_scope": result.plan.evaluation_scope,
             "question_graph": result.question_graph.to_dict() if result.question_graph else None,
+            "question_evidence": [row.to_dict() for row in result.question_evidence],
+            "source_rejections": result.source_rejections,
             "retrieval_runs": result.retrieval_runs,
             "tool_trace": result.trace,
             "investigation_rounds": result.investigation_rounds,
@@ -185,7 +211,7 @@ with st.form("ask_form"):
     question = st.text_input(
         "想了解什么？",
         value="当时预测峰值是多少？项目内部 Warning 是什么？",
-        help="可以像聊天一样问。例如：‘你好，预测最高水位和平均误差有什么关系？’",
+        help="可以像聊天一样问。例如：‘你好，预测最高水位和平均绝对误差（MAE）有什么关系？’",
     )
     as_of_utc = st.text_input("历史回放时刻（UTC）", value="2026-08-03T01:48:00Z")
     llm_column, thinking_column = st.columns(2)
@@ -216,10 +242,10 @@ with st.expander("可以试试这些问题"):
 - `2米以上高水位 MAE 是多少`：高水位评估 JSON，不与总体值混淆。
 - `论文的离线事件召回率是多少？线上验证了洪水检出吗？`：分别查看离线与部署期证据。
 - `项目内部 Caution 是什么？`：查看内部等级；原始术语可在“证据”中核对。
-- `官方 Flood Alert 是什么？`：查看英国官方公开资料的静态定义，不查询当前警报。
+- `官方 Flood Alert 是什么？`：查看官方来源候选；只有链接、没有原文时会说明缺口，不凭模型记忆解释。
 - `House Mill 是什么？为什么会受潮汐影响？`：查看建筑档案和历史研究背景。
 - `Duncan Wilson 的旧传感器怎么布置？论文中的 136 次与 42 次有什么区别？`：分别查看旧项目仓库与论文；不代表设备今天在线。
 - `旧 House Mill 监测和 FloodPred 是什么关系？`：查看毕业论文中的承接说明。
-- `项目内部 Caution 和英国官方预警有什么区别？`：多步调查会在内部规则之后补查官方静态定义，不会查询实时警报。
+- `项目内部 Caution 和英国官方预警有什么区别？`：核实内部规则并补查官方原文；证据不够时只回答已查清的部分。
 - `周末适合读什么书？`：普通聊天，不会冒充项目事实。"""
     )

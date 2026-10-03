@@ -81,6 +81,7 @@ class RetrievalResult:
     quarantined: tuple[dict[str, str], ...] = ()
     version: str | None = None
     checked_on_or_before: str | None = None
+    conflicts: tuple[dict, ...] = ()
 
     def to_debug(self) -> dict[str, Any]:
         return {
@@ -91,6 +92,7 @@ class RetrievalResult:
             "time_note": "核对日期不是发表日期；没有证明资料在回放时刻已可用。",
             "eligible_count": self.eligible_count, "verified_count": self.verified_count,
             "quarantined": self.quarantined,
+            "conflicts": self.conflicts,
             "candidates": [{"id": hit.record["id"], "concept": hit.record["concept"],
                             "equivalent_record_ids": [record["id"] for record in hit.equivalent_records],
                             "equivalent_concepts": [record["concept"] for record in hit.equivalent_records],
@@ -296,6 +298,7 @@ def reciprocal_rank_fusion(rankings: list[tuple[str, str, float, list[tuple[str,
 
 def hybrid_search(request: RetrievalRequest, *, version: str | None = None,
                   checked_on_or_before: str | None = None, top_k: int = MAX_HITS,
+                  allow_conflicts: bool = False,
                   catalog: Path = DEFAULT_CATALOG, root: Path = ROOT) -> RetrievalResult:
     if not 1 <= top_k <= MAX_HITS:
         raise ValueError("top_k 须为 1–8。")
@@ -355,8 +358,13 @@ def hybrid_search(request: RetrievalRequest, *, version: str | None = None,
         key = record["source_type"], record["concept"]
         if key in matched:
             versions.setdefault(key, set()).add(record["version"])
-    if any(len(choices) > 1 for choices in versions.values()):
+    conflict_keys = {key for key, choices in versions.items() if len(choices) > 1}
+    if conflict_keys and not allow_conflicts:
         raise VersionConflict("候选概念存在多个有效版本；请明确版本或人工核对。")
+    conflicts = tuple({"concept": record["concept"], "source_type": record["source_type"],
+                       "id": record["id"], "version": record["version"],
+                       "locator": grounded[record["id"]][0], "reason": "multiple_active_versions"}
+                      for record in records if (record["source_type"], record["concept"]) in conflict_keys)
     by_id = {record["id"]: record for record in records}
     hits = []
     for item_id in sorted(fused, key=lambda item: (-fused[item], item)):
@@ -371,7 +379,7 @@ def hybrid_search(request: RetrievalRequest, *, version: str | None = None,
     paragraphs: list[Hit] = []
     merge_candidates(paragraphs, hits)
     return RetrievalResult(request, tuple(paragraphs[:top_k]), len(eligible), len(records), tuple(quarantined),
-                           version, checked_on_or_before)
+                           version, checked_on_or_before, conflicts)
 
 
 def safe_trace(result: RetrievalResult) -> dict[str, str]:

@@ -22,6 +22,11 @@ def main(argv: list[str] | None = None) -> int:
     print("路径：" + " → ".join(result.plan.steps))
     if result.answer_text:
         print(f"回答（{result.response_mode}）：{result.answer_text}")
+    if result.fallback_text:
+        print("未能形成项目结论：" + result.fallback_text)
+    for row in result.question_evidence:
+        if not row.excluded:
+            print(f"{row.node_id} 证据状态：{row.to_dict()['status_label']}；" + "；".join(row.reasons))
     if result.forecast:
         card = result.forecast
         print(f"历史回放预测峰值：{card.predicted_peak_m:.4f} m；目标时间：{card.predicted_peak_utc}")

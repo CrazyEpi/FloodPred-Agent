@@ -14,6 +14,25 @@ APP_FILE = Path(__file__).resolve().parents[1] / "streamlit_app.py"
 
 
 class StreamlitAppTests(unittest.TestCase):
+    def test_checked_claims_and_question_states_have_visible_original_sources(self):
+        app = AppTest.from_file(str(APP_FILE)).run()
+        app.checkbox[0].set_value(False)
+        app.text_input[0].set_value("项目内部 Caution 是什么？")
+        app.button[0].click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(app.table)
+        self.assertTrue(any("结论 q1" in item.label for item in app.expander))
+        self.assertTrue(any("4.20m <= level < 4.43m" in item.value for item in app.code))
+
+    def test_official_link_only_shows_gap_not_an_answer(self):
+        app = AppTest.from_file(str(APP_FILE)).run()
+        app.checkbox[0].set_value(False)
+        app.text_input[0].set_value("官方 Flood Alert 是什么？")
+        app.button[0].click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any("没有足够的已核验资料" in item.value for item in app.warning))
+        self.assertTrue(any("没有本地网页原文快照" in item.value for item in app.markdown))
+
     def test_raw_retrieval_candidates_are_separate_from_answers(self) -> None:
         app = AppTest.from_file(str(APP_FILE)).run()
         app.checkbox[0].set_value(False)
@@ -21,9 +40,10 @@ class StreamlitAppTests(unittest.TestCase):
         app.button[0].click().run()
         self.assertFalse(app.exception)
         self.assertFalse(app.error)
-        self.assertTrue(any("只展示候选段落" in item.value for item in app.info))
+        self.assertTrue(any("没有足够的已核验资料" in item.value for item in app.warning))
         self.assertTrue(any("仅候选，未用于结论" in item.label for item in app.expander))
         self.assertIn("retrieval_runs", str(app.get("json")[0].value))
+        self.assertIn("question_evidence", str(app.get("json")[0].value))
 
     def test_ambiguous_question_shows_graph_and_clarification_without_cards(self) -> None:
         app = AppTest.from_file(str(APP_FILE)).run()
