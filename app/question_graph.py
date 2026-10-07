@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass, replace
 import re
 from typing import Any
 import unicodedata
+from .web_policy import NetworkHint, local_hint, checked_hint
 
 
 MAX_NODES = 6
@@ -64,6 +65,7 @@ class QuestionItem:
     depends_on: tuple[str, ...] = ()
     evidence_requirements: tuple[str, ...] = ()
     excluded: bool = False
+    network_request: NetworkHint | None = None
 
 
 @dataclass(frozen=True)
@@ -148,6 +150,8 @@ def _attribute(anchor: str, kind: str) -> str:
         return "comparison"
     if kind == "cause":
         return "cause"
+    if re.search(r"活动|开放时间|营业时间", anchor):
+        return "public_schedule"
     if re.search(r"布置|安装|放哪|在哪|哪里|位置", anchor):
         return "placement"
     if re.search(r"怎么预测|如何预测|方法|结构|设计", anchor):
@@ -168,6 +172,8 @@ def _scopes(anchor: SourceSpan, subjects: tuple[SourceSpan, ...]) -> tuple[str, 
         temporal = "current_project" if re.search(r"方法|模型|结构|设计|floodpred", q) else "ambiguous_current"
     else:
         temporal = "unspecified"
+    if local_hint(anchor.text).scope == "public" and local_hint(anchor.text).freshness == "current":
+        temporal = "public_current"  # Public document freshness is not replay availability.
     scope_text = q
     if len(subjects) == 1 and anchor.start <= subjects[0].start:
         subject = subjects[0]
@@ -204,7 +210,8 @@ def _make_item(text: str, anchor: SourceSpan, subjects: tuple[SourceSpan, ...], 
     requested = tuple(_span(text, anchor.start + match.start(), anchor.start + match.end())
                       for match in PREDICATE.finditer(anchor.text))
     return QuestionItem(item_id, (anchor,), subjects, attribute, kind, temporal, source,
-                        qualifiers, requested, dependencies, tuple(requirements), _explicit_exclusion(anchor.text))
+                        qualifiers, requested, dependencies, tuple(requirements), _explicit_exclusion(anchor.text),
+                        local_hint(anchor.text))
 
 
 def _explicit_exclusion(text: str) -> bool:
@@ -229,7 +236,9 @@ def _merge_nodes(items: list[QuestionItem]) -> tuple[QuestionItem, ...]:
             previous = result[index]
             mapping[item.id] = previous.id
             result[index] = replace(previous, anchors=tuple(dict.fromkeys(previous.anchors + item.anchors)),
-                                    qualifiers=tuple(dict.fromkeys(previous.qualifiers + item.qualifiers)))
+                                    qualifiers=tuple(dict.fromkeys(previous.qualifiers + item.qualifiers)),
+                                    network_request=(item.network_request if item.network_request and item.network_request.proposed_by_model
+                                                     else previous.network_request))
         else:
             item_id = f"q{len(result) + 1}"
             mapping[item.id] = item_id
@@ -354,7 +363,8 @@ def checked_question_graph(text: str, proposal: object) -> QuestionGraph:
     model_items = []
     ids: set[str] = set()
     for value in values:
-        if not isinstance(value, dict) or set(value) != {"id", "matched_phrase", "subjects", "kind", "depends_on"}:
+        base_keys = {"id", "matched_phrase", "subjects", "kind", "depends_on"}
+        if not isinstance(value, dict) or set(value) not in (base_keys, base_keys | {"network_request"}):
             raise GraphValidationError("问题项字段不符合结构。")
         item_id, kind = value["id"], value["kind"]
         dependencies, subjects = value["depends_on"], value["subjects"]
@@ -392,6 +402,11 @@ def checked_question_graph(text: str, proposal: object) -> QuestionGraph:
             raise GraphValidationError("原因问题缺少原文依据。")
         item = _make_item(text, anchor, _unique(extracted), kind, "m" + item_id,
                           tuple("m" + dep for dep in dependencies))
+        if "network_request" in value:
+            try:
+                item = replace(item, network_request=checked_hint(value["network_request"], anchor.text))
+            except ValueError as exc:
+                raise GraphValidationError(str(exc)) from exc
         if kind in ("fact", "definition") and RELATION.search(anchor.text):
             attribute = "method" if any(re.search(r"方法|结构|设计", span.text) for span in extracted) else "meaning_and_scope"
             item = replace(item, requested_attribute=attribute)

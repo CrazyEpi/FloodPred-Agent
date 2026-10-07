@@ -220,6 +220,14 @@ class DeepSeekClient:
                 "最多6个节点；每个节点有 id(q1到q6)、matched_phrase(完整且唯一的原文片段)、"
                 "subjects(该片段中逐字存在的对象短语)、kind(fact/definition/relation/comparison/cause)、"
                 "depends_on(前面节点的ID)。寒暄不成节点，纯寒暄 nodes=[]。"
+                "每个问题项额外提供 network_request 联网建议，不代表工具权限。"
+                "该对象字段：scope(project/public/general)，freshness(static/current/unknown)，"
+                "local_possible(yes/no/unknown)，needs_web(布尔)，"
+                "reason(local_first/fresh_information/public_source/local_gap/user_requested)，"
+                "source_requirements(数组，只能含official_guidance/institution_website/research_paper)。"
+                "最新活动/最新官方公开指南可能需要联网；数值峰值、MAE和内部规则走项目资料。"
+                "寒暄和一般概念解释不必联网。不要生成URL或添加允许域名。外部公开问题可用general，"
+                "与项目问题组合仍用project并保留两个问题项。"
                 "关系题先列两个对象的含义与范围节点，再列依赖二者的关系节点；"
                 "例如‘预测峰值和MAE有什么联系’不要改写成用户一定要求某次具体数值。"
                 "用户明确说‘当时/这次/多少’时才有具体数值请求。"
@@ -231,7 +239,10 @@ class DeepSeekClient:
                 "\"concepts\":[{\"id\":\"...\",\"matched_phrase\":\"...\"}],"
                 "\"evaluation_scope\":null,\"question_graph\":{\"nodes\":["
                 "{\"id\":\"q1\",\"matched_phrase\":\"原文片段\",\"subjects\":[\"原文对象\"],"
-                "\"kind\":\"fact\",\"depends_on\":[]}]}}。"
+                "\"kind\":\"fact\",\"depends_on\":[],\"network_request\":{"
+                "\"scope\":\"public\",\"freshness\":\"current\",\"local_possible\":\"unknown\","
+                "\"needs_web\":true,\"reason\":\"fresh_information\","
+                "\"source_requirements\":[\"institution_website\"]}}]}}。"
             )},
             {"role": "user", "content": json.dumps({
                 "question": question,

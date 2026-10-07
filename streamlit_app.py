@@ -183,6 +183,8 @@ def show_result(result: QueryResult) -> None:
             "knowledge_concepts": result.plan.knowledge_concepts,
             "evaluation_scope": result.plan.evaluation_scope,
             "question_graph": result.question_graph.to_dict() if result.question_graph else None,
+            "web_decisions": result.web_decisions,
+            "web_answer_integration": "尚未接入回答；当前网页主流程不执行搜索或抓取",
             "question_evidence": [row.to_dict() for row in result.question_evidence],
             "source_rejections": result.source_rejections,
             "retrieval_runs": result.retrieval_runs,

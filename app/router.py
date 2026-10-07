@@ -17,6 +17,7 @@ from .knowledge import DEFAULT_CATALOG, ROOT, Hit, KnowledgeError, NoEvidence, S
 from .hybrid_retrieval import document_requests, hybrid_search, make_request, merge_candidates, request_for_concept, safe_trace
 from .rag import ChatClient, DeepSeekClient, IntentPlan, RAGError, explain_hit
 from .question_graph import QuestionGraph, build_question_graph, excluded_concepts, excluded_routes
+from .web_policy import decide_web
 from .read_tools import (
     EvaluationArgs,
     EvaluationMetric,
@@ -88,6 +89,7 @@ class QueryResult:
     question_evidence: list[QuestionEvidence] = field(default_factory=list, repr=False)
     verified_claims: list[VerifiedClaim] = field(default_factory=list, repr=False)
     source_rejections: dict[str, str] = field(default_factory=dict, repr=False)
+    web_decisions: list[dict] = field(default_factory=list)
 
 
 DEFAULT_AUDIT_LOG = ROOT / "logs" / "requests.jsonl"
@@ -402,6 +404,8 @@ def run_query(
     result = QueryResult(request_id=request_id, question=question, as_of_utc=as_of_utc, plan=plan,
                          knowledge_checked_on_or_before=knowledge_checked_on_or_before,
                          response_mode=mode, question_graph=question_graph)
+    # Steps 1–2: plan-only diagnostics; the answer executor remains offline.
+    result.web_decisions = [item.to_dict() for item in decide_web(question_graph)]
     result.trace.append({"step": "question_graph", "status": "clarify" if question_graph.needs_clarification else "checked",
                          "origin": question_graph.origin, "nodes": str(len(question_graph.nodes)),
                          "ambiguous_references": str(sum(ref.status == "ambiguous" for ref in question_graph.coreferences)),
