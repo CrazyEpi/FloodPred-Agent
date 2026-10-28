@@ -294,6 +294,7 @@ def run_query(
     forced_plan: RoutePlan | None = None,
     generate_answer: bool = True,
     tool_guard: Callable[[str], None] | None = None,
+    evaluation_paths: tuple[Path, Path] | None = None,
 ) -> QueryResult:
     request_id = uuid4().hex
     timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -480,7 +481,8 @@ def run_query(
             elif step == "evaluation_metrics":
                 if tool_guard is not None:
                     tool_guard(step)
-                result.evaluation = evaluation_metrics_tool(EvaluationArgs(scope=plan.evaluation_scope))
+                result.evaluation = evaluation_metrics_tool(EvaluationArgs(scope=plan.evaluation_scope),
+                    **({"overall_path": evaluation_paths[0], "high_water_path": evaluation_paths[1]} if evaluation_paths else {}))
                 result.trace.append({"step": step, "status": "ok", "scope": result.evaluation.scope, "version_utc": result.evaluation.generated_utc, "source_sha256": result.evaluation.source_sha256})
                 evidence_bundle.append({"id": f"evaluation:{result.evaluation.scope}:{result.evaluation.source_sha256[:12]}", "kind": "hindsight_evaluation", "fact": f"事后批次评估 MAE {result.evaluation.mae_m:.6f} {result.evaluation.unit}；样本范围：{volunteer_fact(result.evaluation.sample_scope)}；匹配预测目标点 {result.evaluation.matched_prediction_points}；版本生成时间 {_friendly_utc(result.evaluation.generated_utc)}。MAE 是点级平均绝对误差，通俗地说，就是把这一批预测和实测逐个比较后平均差了多少米；不是某一次预测峰值的误差，也不是洪水事件检出率。", "source": "已校验哈希的只读评估快照"})
             else:

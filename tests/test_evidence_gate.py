@@ -71,8 +71,8 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_focused_gap_retry_finds_bridge_and_does_not_repeat_same_query(self):
         initial = self.without_bridge()
-        with patch("app.investigation.run_query", return_value=initial), \
-             patch("app.investigation.hybrid_search", wraps=hybrid_search) as search:
+        with patch("app.investigation_core.run_query", return_value=initial), \
+             patch("app.investigation_core.hybrid_search", wraps=hybrid_search) as search:
             result = self.ask(RELATION)
         self.assertEqual(result.answer_status, "verified")
         self.assertEqual(result.investigation_rounds, 2)

@@ -104,7 +104,13 @@ Run the offline regression tests:
 .\.venv-d4\Scripts\python.exe -X utf8 -m unittest discover -s tests -q
 ```
 
-**175 regression tests passed on 5 October 2026**, covering routing, source integrity, time leakage, partial answers, budgets, and web restrictions. This is a recorded test result, not an open-ended accuracy or security guarantee.
+The offline suite covers routing, source integrity, time leakage, partial answers, budgets, web restrictions, and LangGraph migration parity. The migration tests retain a frozen pre-migration executor under `tests/support/` and compare evidence, outcomes, stopping reasons, and call counts. See the [migration report](reports/langgraph_migration_steps4_9_2026-10-28.md) for the current recorded results; these are not an open-ended accuracy or security guarantee.
+
+Run the graph-specific checks separately:
+
+```powershell
+.\.venv-d4\Scripts\python.exe -X utf8 -m unittest tests.test_investigation_graph -v
+```
 
 See the [web-tool report](reports/web_step1_2_2026-10-05.md) and [evidence-check report](reports/P2_step3_4_evidence_2026-10-03.md) for detailed results.
 
@@ -123,7 +129,37 @@ FloodPred-Agent/
 `-- .env.example         Optional API configuration
 ```
 
-The stack uses Python, Streamlit, Pydantic, NumPy, SQLite, and the optional DeepSeek API. Orchestration uses ordinary Python; no LangChain, LangGraph, or external vector database is required.
+The stack uses Python, Streamlit, Pydantic, NumPy, SQLite, LangGraph **1.2.18**, and the optional DeepSeek API. `run_investigation()` uses a sequential LangGraph workflow for first evidence, targeted follow-ups, evidence checks, finalization, and audit. Existing tools, hybrid retrieval, and the direct DeepSeek client remain in place. The full LangChain package and an external vector database are not required; LangGraph's necessary dependencies are installed by `requirements.txt`, with resolved additions pinned in `requirements_langgraph.lock.txt`.
+
+The ordinary graph caches topology only; evidence, clients, and budgets are per request. Optional SQLite checkpoints now support cross-process resume with saved budgets and time scope. Node-result journaling reuses completed work; an interrupted node with an unknown call outcome stops conservatively instead of issuing the call again. The default 60-second deadline includes downtime. Parallel tools and automatic node retries remain disabled. External LangSmith tracing is disabled for investigation execution, including when enabled in the host environment.
+
+## Web display and debug mode
+
+The sidebar “调试模式” toggle is off by default. Normal mode shows only “回答” and “证据”: answers use friendly source numbers, with source titles, original excerpts and versions. Internal claim/citation IDs, forecast run IDs, hashes, full paths and retrieval details appear only in debug mode. Debug adds “运行细节”, including the original answer, citation mapping, trace, question graph and available model diagnostics. Thinking still independently controls the existing DeepSeek request; its default is unchanged.
+
+Repeated product disclaimers are omitted from the displayed answer; source originals, evidence gaps and actual failures remain available. Raw answers are preserved in debug mode. For timeout settings and acceleration options, see [service operations](docs/06_local_service_operations.md).
+
+The latest result stays in the current Streamlit session. Switching debug mode rerenders it without another investigation or model call. Submitting a failed new question clears the previous result. This session display is not a persistent checkpoint.
+
+Offline display verification:
+
+```powershell
+.\.venv-d4\Scripts\python.exe -X utf8 -m unittest tests.test_presentation tests.test_streamlit_app -v
+```
+
+For manual verification, disable DeepSeek and submit the default historical question. Check the peak, date, units and friendly sources; turn debug on to see raw IDs, then off to hide them. Neither mode has recovery-code controls. See [manual acceptance steps](docs/14_checkpoints_and_demo.md#4-streamlit-测试).
+
+## Local checkpoints and resume
+
+The web UI uses ordinary investigations and has no save/resume controls. Existing saved investigations remain available through the CLI. Run the two-process offline demo:
+
+```powershell
+$env:FLOODPRED_DATA_MODE = 'demo'
+.\.venv-d4\Scripts\python.exe -X utf8 -m app.checkpoint_cli demo
+.\.venv-d4\Scripts\python.exe -X utf8 -m unittest tests.test_checkpoints -v
+```
+
+The default state database is `state/investigations.sqlite3`, separate from evidence databases and ignored by Git. It stores question/evidence snapshots, not model clients, API keys, or raw reasoning. Resume codes authorize access to one local investigation. Resume works at saved node boundaries, not arbitrary lines of code. See [checkpoint operations and testing](docs/14_checkpoints_and_demo.md) and the [checkpoint report](reports/checkpoints_and_demo_2026-10-28.md) for exact behavior, manual tests, and validated resume wording for a CV.
 
 ## Scope
 
@@ -133,4 +169,4 @@ The stack uses Python, Streamlit, Pydantic, NumPy, SQLite, and the optional Deep
 
 The bundled dataset is a small demonstration subset. Check [data provenance](demo_data/PROVENANCE.md) and usage rights before redistribution. Keep API keys, local backups, and request logs out of version control.
 
-Further reading: [architecture](docs/08_architecture.md), [security](docs/09_security.md), and [House Mill sources](docs/12_housemill_context.md).
+Further reading: [architecture](docs/08_architecture.md), [migration contract](docs/13_langgraph_migration_contract.md), [checkpoints](docs/14_checkpoints_and_demo.md), [security](docs/09_security.md), and [House Mill sources](docs/12_housemill_context.md).

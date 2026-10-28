@@ -21,7 +21,7 @@ class StreamlitAppTests(unittest.TestCase):
         app.button[0].click().run()
         self.assertFalse(app.exception)
         self.assertTrue(app.table)
-        self.assertTrue(any("结论 q1" in item.label for item in app.expander))
+        self.assertTrue(any("结论 1" in item.label for item in app.expander))
         self.assertTrue(any("4.20m <= level < 4.43m" in item.value for item in app.code))
 
     def test_official_link_only_shows_gap_not_an_answer(self):
@@ -42,6 +42,8 @@ class StreamlitAppTests(unittest.TestCase):
         self.assertFalse(app.error)
         self.assertTrue(any("没有足够的已核验资料" in item.value for item in app.warning))
         self.assertTrue(any("仅候选，未用于结论" in item.label for item in app.expander))
+        self.assertFalse(app.get("json"))
+        app.toggle[0].set_value(True).run()
         self.assertIn("retrieval_runs", str(app.get("json")[0].value))
         self.assertIn("question_evidence", str(app.get("json")[0].value))
 
@@ -54,6 +56,8 @@ class StreamlitAppTests(unittest.TestCase):
         self.assertFalse(app.metric)
         self.assertFalse(app.error)
         self.assertTrue(any("当前实时水情" in item.value for item in app.markdown))
+        self.assertFalse(app.get("json"))
+        app.toggle[0].set_value(True).run()
         self.assertIn("question_graph", str(app.get("json")[0].value))
         self.assertIn("needs_clarification", str(app.get("json")[0].value))
 
@@ -61,14 +65,15 @@ class StreamlitAppTests(unittest.TestCase):
         app = AppTest.from_file(str(APP_FILE)).run()
         self.assertFalse(app.exception)
         self.assertFalse(app.warning)
-        self.assertEqual(len(app.text_input), 2)
+        self.assertEqual([field.label for field in app.text_input],
+                         ["想了解什么？", "历史回放时刻（UTC）"])
         self.assertEqual(app.checkbox[0].label, "用 DeepSeek 理解和回答")
-        self.assertEqual(app.checkbox[1].label, "开启 Thinking（显示思维链）")
+        self.assertEqual(app.checkbox[1].label, "开启 Thinking")
         self.assertEqual(app.checkbox[2].label, "多步调查（最多 3 轮）")
         app.checkbox[0].set_value(False)
         app.button[0].click().run()
         self.assertFalse(app.exception)
-        self.assertEqual([tab.label for tab in app.tabs], ["回答", "证据", "运行细节"])
+        self.assertEqual([tab.label for tab in app.tabs], ["回答", "证据"])
         self.assertEqual(app.metric[0].value, "3.7832 m")
         self.assertFalse(app.error)
 
@@ -83,6 +88,10 @@ class StreamlitAppTests(unittest.TestCase):
         app.button[0].click().run()
         self.assertFalse(app.exception)
         self.assertTrue(app.error)
+        self.assertFalse(app.metric)
+        self.assertFalse(app.tabs)
+        app.toggle[0].set_value(True).run()
+        self.assertFalse(app.tabs)
 
     def test_reasoning_content_is_only_in_debug_expander(self) -> None:
         result = QueryResult(
@@ -90,9 +99,14 @@ class StreamlitAppTests(unittest.TestCase):
             plan=RoutePlan((), (), None), response_mode="greeting", answer_text="你好！",
             reasoning_traces=[{"stage": "问题规划", "content": "这只是模型的中间文字"}],
         )
-        with patch("app.investigation.run_investigation", return_value=result):
+        with patch("app.investigation.run_investigation", return_value=result) as mocked:
             app = AppTest.from_file(str(APP_FILE)).run()
             app.button[0].click().run()
+            self.assertFalse(any("思维链" in entry.label for entry in app.expander))
+            self.assertFalse(app.get("json"))
+            app.toggle[0].set_value(True).run()
+            self.assertEqual([tab.label for tab in app.tabs], ["回答", "证据", "运行细节"])
+            mocked.assert_called_once()
         self.assertFalse(app.exception)
         self.assertTrue(any("思维链 · 问题规划" in entry.label for entry in app.expander))
         self.assertTrue(any("不是项目事实" in entry.value for entry in app.warning))

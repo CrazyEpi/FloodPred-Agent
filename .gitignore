@@ -2,6 +2,7 @@
 .venv-d4/
 backup/
 logs/
+state/
 __pycache__/
 *.py[cod]
 .pytest_cache/

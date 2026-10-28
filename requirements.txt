@@ -2,3 +2,6 @@
 pydantic==2.13.5
 streamlit==1.64.0
 numpy==2.5.3
+langgraph==1.2.18
+-c requirements_langgraph.lock.txt
+langgraph-checkpoint-sqlite==3.1.2
