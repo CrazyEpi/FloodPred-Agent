@@ -177,7 +177,7 @@ class _PersistentBudget(core._Budget):
     def __init__(self, store, execution_id, payload, now):
         self.store, self.execution_id, self.now = store, execution_id, now
         self.deadline = payload["deadline"]
-        self.limits = core.InvestigationLimits(**payload["limits"])
+        self.limits = core.InvestigationLimits(**{ "llm_request_timeout_seconds": 20.0, **payload["limits"]})
         row = store.row(execution_id)
         self._tools, self._llms, self._exceeded = row["tools"], row["llms"], row["exceeded"]
         if not (0 <= self._tools <= self.limits.max_tool_calls and 0 <= self._llms <= self.limits.max_llm_calls):
@@ -422,12 +422,15 @@ def _summary(row, token, payload, next_nodes, result):
 def start_persisted_investigation(question: str, *, state_db: Path = DEFAULT_STATE_DB,
         as_of_utc: str | None = None, knowledge_checked_on_or_before: str | None = None,
         use_llm: bool = False, thinking_enabled: bool | None = None, client=None,
+        allow_web: bool = False,
         forecast_db: Path = core.DEFAULT_DB, sonar_db: Path = core.DEFAULT_SONAR_DB,
         catalog: Path = core.DEFAULT_CATALOG, root: Path = core.ROOT,
         limits: core.InvestigationLimits = core.InvestigationLimits(),
         pause_after: str | None = None, now: Callable[[], float] = time.time) -> PersistedInvestigation:
     if pause_after not in (None, "first_pass", "followup"):
         raise CheckpointError("只支持在首次取证或一轮补查结束后暂停。")
+    if type(allow_web) is not bool:
+        raise CheckpointError("allow_web 必须为布尔值")
     paths = {name: str(Path(path).resolve()) for name, path in {
         "forecast_db": forecast_db, "sonar_db": sonar_db, "catalog": catalog, "root": root,
         "overall": OVERALL_SUMMARY, "high_water": HIGH_WATER_SUMMARY}.items()}
@@ -436,7 +439,7 @@ def start_persisted_investigation(question: str, *, state_db: Path = DEFAULT_STA
     store = _Store(state_db, create=True)
     execution_id, secret = uuid4().hex, secrets.token_urlsafe(32)
     payload = {"schema_version": SCHEMA_VERSION, "request": InvestigationRequest(question, as_of_utc,
-               knowledge_checked_on_or_before, use_llm, thinking_enabled),
+               knowledge_checked_on_or_before, use_llm, thinking_enabled, allow_web),
                "limits": asdict(limits), "deadline": now() + limits.max_seconds,
                "paths": paths, "source_context": _source_context(paths)}
     store.create(execution_id, secret, payload)

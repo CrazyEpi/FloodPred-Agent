@@ -19,12 +19,14 @@ from .read_tools import EvaluationMetric
 from .replay import Observation, ReplayCard
 from .router import KnowledgeItem, QueryResult, RoutePlan
 from .web_policy import NetworkHint
+from .web_evidence import WebSnapshot
+from .web_tools import PagePreview
 
 
 _TYPES = {cls.__name__: cls for cls in (
     Citation, QuestionEvidence, VerifiedClaim, BudgetSnapshot, InvestigationRequest,
     Hit, Coreference, QuestionGraph, QuestionItem, SourceSpan, EvaluationMetric,
-    Observation, ReplayCard, KnowledgeItem, QueryResult, RoutePlan, NetworkHint,
+    Observation, ReplayCard, KnowledgeItem, QueryResult, RoutePlan, NetworkHint, WebSnapshot, PagePreview,
 )}
 
 
@@ -65,6 +67,11 @@ def decode(value):
         cls = _TYPES[kind]
         data = decode(data)
         expected = set(cls.model_fields) if issubclass(cls, BaseModel) else {f.name for f in fields(cls)}
+        # Only the two known legacy shapes may omit newly introduced fields.
+        additions = {"QueryResult": {"web_evidence": [], "web_runs": []},
+                     "InvestigationRequest": {"allow_web": False}}
+        if kind in additions and isinstance(data, dict) and set(data) == expected - set(additions[kind]):
+            data = {**data, **additions[kind]}
         if not isinstance(data, dict) or set(data) != expected:
             raise ValueError(f"Incompatible checkpoint fields: {kind}")
         return cls.model_validate(data) if issubclass(cls, BaseModel) else cls(**data)

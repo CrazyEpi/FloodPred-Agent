@@ -20,7 +20,7 @@ import socket
 import ssl
 from threading import Thread
 import time
-from urllib.parse import urlsplit, urlunsplit, urlencode
+from urllib.parse import urlsplit, urlunsplit, urlencode, urljoin
 
 from .web_policy import WebDecision, search_terms, TOPIC_DOMAINS
 
@@ -205,6 +205,10 @@ class PagePreview:
     last_modified_header: str | None
     published_at: str | None = None
     status: str = "unverified_page_preview"
+    raw_body: bytes = b""
+    links: tuple[str, ...] = ()
+    dates: tuple[str, ...] = ()
+    content_type: str = "text/html;charset=utf-8"
 
 
 class _HTMLText(HTMLParser):
@@ -218,6 +222,9 @@ class _HTMLText(HTMLParser):
         self.title_parts = []
         self.parts = []
         self.paragraphs = []
+        self.links = []
+        self.dates = []
+        self.published_at = None
 
     def flush(self):
         text = re.sub(r"\s+", " ", "".join(self.parts)).strip()
@@ -227,9 +234,18 @@ class _HTMLText(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attributes = dict(attrs)
+        if tag == "meta" and attributes.get("property", attributes.get("name", "")).lower() in (
+            "article:published_time", "datepublished", "date", "dc.date.issued"):
+            date = attributes.get("content", "")
+            if re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:T[\d:.+Z-]+)?", date):
+                self.published_at = date
+        if tag == "time" and re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:T[\d:.+Z-]+)?", attributes.get("datetime", "")):
+            self.dates.append(attributes["datetime"])
         hidden = (tag in self.SKIP or "hidden" in attributes
                   or attributes.get("aria-hidden", "").lower() == "true"
                   or re.search(r"display\s*:\s*none|visibility\s*:\s*hidden", attributes.get("style", ""), re.I))
+        if tag == "a" and not hidden and not any(item[1] for item in self.stack) and len(self.links) < 200:
+            self.links.append(attributes.get("href", ""))
         if tag in self.BLOCK:
             self.flush()
         if tag not in {"br", "img", "meta", "link", "input", "hr", "wbr", "source"}:
@@ -325,9 +341,18 @@ def fetch_public_page(url: str, *, decision: WebDecision, budget: NetworkBudget 
     paragraphs = tuple(parser.paragraphs[:100])
     if not paragraphs:
         raise WebToolError("empty_page：未找到可读取正文（可能需登录或执行脚本）")
+    links = []
+    for link in parser.links:
+        try:
+            _, target = validate_url(urljoin(clean, link), decision.domains)
+        except WebToolError:
+            continue
+        if target != clean and target not in links:
+            links.append(target)
     return PagePreview(clean, " ".join(parser.title_parts).strip()[:300], paragraphs,
                        datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-                       hashlib.sha256(response.body).hexdigest(), response.last_modified)
+                       hashlib.sha256(response.body).hexdigest(), response.last_modified,
+                       parser.published_at, raw_body=response.body, links=tuple(links[:30]), dates=tuple(dict.fromkeys(parser.dates)), content_type=response.content_type)
 
 
 def _authorize(decision):

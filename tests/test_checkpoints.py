@@ -178,7 +178,7 @@ class CheckpointTests(unittest.TestCase):
         with patch.object(core, "first_pass", side_effect=AssertionError("incompatible state")), self.assertRaises(CheckpointError):
             self.resume(run.resume_token)
 
-    def test_streamlit_removes_recovery_controls_in_both_modes(self):
+    def test_chat_restore_is_separate_from_execution_recovery_in_both_modes(self):
         from streamlit.testing.v1 import AppTest
         with patch("app.investigation.start_persisted_investigation") as start, \
              patch("app.investigation.resume_investigation") as resume:
@@ -187,10 +187,12 @@ class CheckpointTests(unittest.TestCase):
             for debug in (False, True):
                 app.toggle[0].set_value(debug).run()
                 self.assertFalse(app.exception)
-                self.assertEqual(len(app.text_input), 2)
-                self.assertEqual(len(app.checkbox), 3)
+                self.assertEqual(len(app.text_input), 3)
+                self.assertEqual(len(app.chat_input), 1)
+                self.assertEqual(len(app.checkbox), 7)
                 labels = [item.label for kind in (app.text_input, app.checkbox, app.button, app.expander) for item in kind]
-                self.assertFalse(any("恢复" in label or "保存调查" in label for label in labels))
+                self.assertIn("恢复对话", labels)
+                self.assertFalse(any("恢复调查" in label or "保存调查" in label for label in labels))
                 self.assertNotIn("last_resume_token", app.session_state)
             start.assert_not_called()
             resume.assert_not_called()
@@ -204,7 +206,8 @@ class CheckpointTests(unittest.TestCase):
              patch("app.investigation.start_persisted_investigation") as start, \
              patch("app.investigation.resume_investigation") as resume:
             app = AppTest.from_file(str(ROOT / "streamlit_app.py")).run(timeout=10)
-            app.button[0].click().run(timeout=10)
+            app.checkbox(key='use_llm').set_value(False)
+            app.chat_input[0].set_value('当时预测峰值是多少？').run(timeout=10)
             app.toggle[0].set_value(True).run()
             self.assertFalse(app.exception)
             self.assertTrue(any("普通回答" in item.value for item in app.markdown))

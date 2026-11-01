@@ -35,13 +35,16 @@ class InvestigationLimits:
     max_rounds: int = 3
     max_tool_calls: int = 8
     max_llm_calls: int = 4
-    max_seconds: float = 60.0
+    max_seconds: float = 120.0
+    llm_request_timeout_seconds: float = 40.0
 
     def __post_init__(self) -> None:
         if not 2 <= self.max_rounds <= 3 or not 1 <= self.max_tool_calls <= 12:
             raise ValueError("Investigation must use 2–3 rounds and 1–12 read-only tool calls")
         if not 2 <= self.max_llm_calls <= 6 or not 1 <= self.max_seconds <= 180:
             raise ValueError("Invalid LLM or time budget")
+        if not 1 <= self.llm_request_timeout_seconds <= 90:
+            raise ValueError("Invalid per-request LLM timeout")
 
 
 class BudgetExceeded(Exception):
@@ -79,8 +82,8 @@ class _Budget:
             raise BudgetExceeded("调查已达到 DeepSeek 调用上限；保留已核验的资料。")
         self.llm_calls += 1
         if isinstance(provider, DeepSeekClient):
-            # A network call cannot outlive the remaining investigation budget.
-            provider.request_timeout_seconds = min(20.0, max(1.0, self.remaining()))
+            # Bound blocking timeout by remaining time; this is cooperative, not hard cancellation.
+            provider.request_timeout_seconds = min(self.limits.llm_request_timeout_seconds, max(1.0, self.remaining()))
 
 
 def _attempted(plan: RoutePlan) -> set[str]:
@@ -136,14 +139,20 @@ def _check_fingerprint(result: QueryResult) -> tuple:
 
 def _fill_gaps(result: QueryResult, round_number: int, budget: BudgetHandle, *, catalog: Path,
                root: Path, forecast_db: Path, sonar_db: Path, provider, use_llm: bool,
-               attempted: set[str], evaluation_paths: tuple[Path, Path] | None = None) -> bool:
+               attempted: set[str], evaluation_paths: tuple[Path, Path] | None = None,
+               allow_web: bool = False) -> bool:
     gaps = [row for row in missing_items(result) if row.status != CONFLICT]
     if not gaps:
         return False
+    if allow_web:
+        from .web_policy import decide_web
+        public_ids = {d.question_id for d in decide_web(result.question_graph, allow_web=True, local_missing=tuple(r.node_id for r in gaps)) if d.allowed}
+        # Missing public endpoints need a real page, not repeated local link hits.
+        gaps = [row for row in gaps if row.node_id not in public_ids]
     # A model can suggest which MISSING topics to inspect first, never approve
     # evidence or add unrelated tools. It does not choose arbitrary query text.
     reviewer = getattr(provider, "review", None)
-    if use_llm and callable(reviewer) and budget.llm_calls < budget.limits.max_llm_calls - 1:
+    if use_llm and callable(reviewer) and (not allow_web or len(gaps) > 1) and budget.llm_calls < budget.limits.max_llm_calls - 1:
         try:
             budget.reserve_llm(provider)
             checked_facts = [{"id": claim.id, "fact": claim.text, "status": claim.status,
@@ -201,6 +210,9 @@ def _fill_gaps(result: QueryResult, round_number: int, budget: BudgetHandle, *, 
             result.trace.append({"step": "gap_search", "node_id": row.node_id, "status": "failed",
                                  "round": str(round_number), "error_type": type(exc).__name__})
         budget.check_time()
+    if allow_web:
+        from .web_evidence import fill_web_gaps
+        executed = fill_web_gaps(result, budget, catalog=catalog, provider=provider, use_llm=use_llm) or executed
     return executed
 
 
@@ -231,6 +243,7 @@ def first_pass(request: InvestigationRequest, runtime: InvestigationRuntime) -> 
             forecast_db=forecast_db, sonar_db=sonar_db, catalog=catalog, root=root,
             audit_log=None, generate_answer=False, tool_guard=budget.reserve_tool,
             **({"evaluation_paths": runtime.evaluation_paths} if runtime.evaluation_paths else {}),
+            **({"_defer_public_reply": True} if request.allow_web else {}),
         )
     except UnsupportedRoute as exc:
         if audit_log is not None:

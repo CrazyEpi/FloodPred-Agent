@@ -26,7 +26,10 @@ def summary(run):
             "stop_reason": result.investigation_stop_reason if result else None,
             "run_id": result.forecast.run_id if result and result.forecast else None,
             "rounds": result.investigation_rounds if result else 0,
-            "warnings": result.warnings if result else []}
+            "warnings": result.warnings if result else [],
+            "web_sources": [{"url": item.page.url, "title": item.page.title,
+                             "fetched_at_utc": item.page.fetched_at_utc}
+                            for item in result.web_evidence] if result else []}
 
 
 def main() -> int:
@@ -37,7 +40,8 @@ def main() -> int:
     start.add_argument("--as-of", default="2026-08-03T01:48:00Z")
     start.add_argument("--knowledge-checked-on-or-before")
     start.add_argument("--pause-after", choices=("first_pass", "followup"))
-    start.add_argument("--max-seconds", type=float, default=60)
+    start.add_argument("--max-seconds", type=float, default=120)
+    start.add_argument("--allow-web", action="store_true")
     start.add_argument("--max-tool-calls", type=int, default=8)
     start.add_argument("--max-llm-calls", type=int, default=4)
     start.add_argument("--llm", action="store_true")
@@ -54,7 +58,7 @@ def main() -> int:
             run = start_persisted_investigation(
                 args.question, state_db=args.state_db, as_of_utc=args.as_of,
                 knowledge_checked_on_or_before=args.knowledge_checked_on_or_before,
-                use_llm=args.llm, pause_after=args.pause_after,
+                use_llm=args.llm, allow_web=args.allow_web, pause_after=args.pause_after,
                 limits=InvestigationLimits(max_seconds=args.max_seconds,
                     max_tool_calls=args.max_tool_calls, max_llm_calls=args.max_llm_calls),
             )

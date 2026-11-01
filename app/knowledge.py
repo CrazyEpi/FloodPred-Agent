@@ -122,6 +122,15 @@ def _semantic_rank(question: str, records: list[dict[str, Any]]) -> dict[str, fl
     expanded = question + " " + " ".join(
         replacement for alias, replacement in _SEMANTIC_ALIASES.items() if alias in question
     )
+    from .retrieval_index import semantic_scores
+    documents = tuple(tuple(sorted(set(_tokens(" ".join((item["title"], item["section"], item["summary"], *item["keywords"])))))) for item in records)
+    scores = semantic_scores(_tokens(expanded), documents)
+    return {item['id']: float(max(0, min(1, score))) for item, score in zip(records, scores)}
+
+
+def _legacy_semantic_rank(question: str, records: list[dict[str, Any]]) -> dict[str, float]:
+    """Retained only for benchmark comparison, not used by retrieval."""
+    expanded = question + " " + " ".join(replacement for alias, replacement in _SEMANTIC_ALIASES.items() if alias in question)
     texts = [expanded] + [" ".join((item["title"], item["section"], item["summary"], *item["keywords"])) for item in records]
     tokenized = [set(_tokens(text)) for text in texts]
     vocabulary = sorted(set().union(*tokenized))
@@ -172,6 +181,7 @@ def _candidate_anchor(question: str, record: dict[str, Any]) -> bool:
 
 
 def _source_evidence(record: dict[str, Any], root: Path) -> tuple[str, str | None]:
+    from .source_snapshot import read_bytes
     ref = record["source_ref"]
     if record["source_type"] == "official_public_guidance":
         if not ref.startswith("https://www.gov.uk/"):
@@ -181,9 +191,9 @@ def _source_evidence(record: dict[str, Any], root: Path) -> tuple[str, str | Non
     path = (root / ref).resolve(strict=True)
     if not path.is_relative_to(root.resolve()):
         raise SourceIntegrityError(f"Source path escapes project: {ref}")
-    if hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
+    if hashlib.sha256(read_bytes(path)).hexdigest() != record["sha256"]:
         raise SourceIntegrityError(f"Source hash changed: {ref}")
-    lines = path.read_text(encoding="utf-8").splitlines()
+    lines = read_bytes(path).decode('utf-8').splitlines()
     start, end = record["line_start"], record["line_end"]
     if not 1 <= start <= end <= len(lines):
         raise SourceIntegrityError(f"Invalid line span: {ref}:{start}-{end}")
@@ -193,13 +203,13 @@ def _source_evidence(record: dict[str, Any], root: Path) -> tuple[str, str | Non
         # PDF verification after relocation; never silently skip a present copy.
         for parent in ROOT.parents[:3]:
             origin = parent / "Dissertation" / record["origin_filename"]
-            if origin.is_file() and hashlib.sha256(origin.read_bytes()).hexdigest() != record["origin_sha256"]:
+            if origin.is_file() and hashlib.sha256(read_bytes(origin)).hexdigest() != record["origin_sha256"]:
                 raise SourceIntegrityError("Source dissertation PDF hash changed; thesis excerpt refused")
         pages = ", ".join(str(page) for page in record["pdf_pages"])
         return f"{record['origin_filename']} PDF文件页 {pages} | 摘录 {path}:{start}-{end} § {record['section']}", excerpt
     if record["source_type"] == "research_paper":
         origin = Path.home() / "Downloads" / record["origin_filename"]
-        if origin.is_file() and hashlib.sha256(origin.read_bytes()).hexdigest() != record["origin_sha256"]:
+        if origin.is_file() and hashlib.sha256(read_bytes(origin)).hexdigest() != record["origin_sha256"]:
             raise SourceIntegrityError("Source research PDF hash changed; curated note refused")
         pages = ", ".join(str(page) for page in record["pdf_pages"])
         return f"{record['origin_filename']} PDF文件页 {pages} | 整理笔记 {path}:{start}-{end} § {record['section']}", excerpt

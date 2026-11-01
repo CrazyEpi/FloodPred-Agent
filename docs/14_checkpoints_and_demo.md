@@ -41,7 +41,7 @@ $env:FLOODPRED_DATA_MODE = 'demo'
 
 ## 3. 手动暂停和恢复
 
-复制以下命令可在默认 60 秒内直接完成：
+复制以下命令可在新任务默认 120 秒内直接完成：
 
 ```powershell
 $checkpointRun = .\.venv-d4\Scripts\python.exe -X utf8 -m app.checkpoint_cli start "项目内部 Caution 和英国官方预警有什么区别？" --pause-after first_pass | ConvertFrom-Json
@@ -110,7 +110,7 @@ Start-Sleep -Seconds 2
 | 状态版本不兼容或内容损坏 | 拒绝恢复，提示新建调查 |
 | 已完成调查 | 直接读取保存结果，不重新运行或重复审计 |
 
-默认总时限仍为 60 秒，包含暂停和停机时间；工具／模型次数在调用前持久扣减，恢复不重新发放额度。持久化预算以绝对 UTC 截止时间为依据，仍是协作式检查，不是进程级强制取消。
+新任务默认总时限为 120 秒，包含暂停和停机时间；工具／模型次数在调用前持久扣减，恢复不重新发放额度。持久化预算以绝对 UTC 截止时间为依据，仍是协作式检查，不是进程级强制取消。
 
 恢复的来源一致性主要通过版本和文件元数据发现变化，并对已有结论执行必要的精确来源校验；不扫描整个项目或所有历史备份的 SHA-256。证据摘录、评估快照和访问凭证所需的完整性／身份校验保留。
 
@@ -125,3 +125,18 @@ Start-Sleep -Seconds 2
 > 基于 LangGraph 编排拆题、只读查询、混合检索、证据校验及定向补查，统一管理状态、调用预算和终止条件；支持 SQLite 检查点持久化与节点边界恢复，保留回放时间和已消耗额度，并验证跨进程恢复及局部回答。
 
 恢复能力不等于实时洪水预测、官方告警服务或已上线的多用户生产系统。
+
+## 7. 联网快照与旧状态兼容
+
+调查与检查点 CLI 均需显式传 `--allow-web` 才联网。网页仍无恢复入口。新任务默认模型单次上限 40 秒、总计 120 秒；旧任务沿用保存的截止时间，缺少单次限制字段时按 20 秒处理；旧请求缺少联网字段时按关闭恢复。
+
+网页原始 HTML、提取段落与来源元数据随 `QueryResult.web_evidence` 保存，原始模型诊断继续排除。恢复只复用并复核这次保存的网页快照，不宣称再次验证当前网站；新调查才重新读取网页。补查节点中途失败时，不重发未知结果的请求，已扣次数保留。
+
+离线演示保持原命令。联网恢复示例（有网络请求，不调用 DeepSeek）：
+
+```powershell
+$checkpointRun = .\.venv-d4\Scripts\python.exe -X utf8 -m app.checkpoint_cli start "项目内部 Caution 和英国官方预警有什么区别？" --allow-web --pause-after followup | ConvertFrom-Json
+.\.venv-d4\Scripts\python.exe -X utf8 -m app.checkpoint_cli resume $checkpointRun.resume_token
+```
+
+当前运行结果见 [网页集成报告](../reports/web_answer_integration_2026-10-28.md)。旧报告计数与默认值作为历史记录保留。

@@ -80,6 +80,7 @@ def followup(state: GraphState, runtime: Runtime[InvestigationRuntime]) -> dict:
     context = runtime.context
     attempted = set(state["attempted"])
     round_number = result.investigation_rounds + 1
+    previous_web_runs = len(result.web_runs)
     try:
         # Exactly the old outer-loop check; do not add clock reads in routers.
         context.budget.check_time()
@@ -89,16 +90,23 @@ def followup(state: GraphState, runtime: Runtime[InvestigationRuntime]) -> dict:
             sonar_db=context.sonar_db, provider=context.provider,
             use_llm=state["llm_available"], attempted=attempted,
             evaluation_paths=context.evaluation_paths,
+            **({"allow_web": True} if state["request"].allow_web else {}),
         )
     except core.BudgetExceeded as exc:
         result.errors.append(str(exc))
         result.investigation_stop_reason = context.budget.exceeded
+        if state["request"].allow_web and any(run.get("operation") in ("fetch", "search") for run in result.web_runs[previous_web_runs:]):
+            result.investigation_rounds = round_number
+            core.assess_evidence(result, root=context.root)
     else:
         if executed:
             result.investigation_rounds = round_number
         else:
             result.investigation_stop_reason = "partial_evidence"
-    return {"result": result, "attempted": frozenset(attempted)}
+    available = state["llm_available"]
+    if any(entry.get("step") == "web_extract" and entry.get("error_type") in ("LLMRequestError", "LLMNotConfigured") for entry in result.trace):
+        available = False
+    return {"result": result, "attempted": frozenset(attempted), "llm_available": available}
 
 
 def after_followup(state: GraphState) -> Literal["recheck", "finalize"]:

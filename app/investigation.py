@@ -24,6 +24,7 @@ def run_investigation(
     knowledge_checked_on_or_before: str | None = None,
     use_llm: bool = False,
     thinking_enabled: bool | None = None,
+    allow_web: bool = False,
     client: ChatClient | None = None,
     forecast_db: Path = DEFAULT_DB,
     sonar_db: Path = DEFAULT_SONAR_DB,
@@ -34,11 +35,13 @@ def run_investigation(
     clock: Callable[[], float] = time.monotonic,
 ) -> QueryResult:
     """Execute the bounded graph while retaining the existing public contract."""
+    if type(allow_web) is not bool:
+        raise ValueError("allow_web 必须为布尔值")
     from .investigation_graph import get_investigation_graph, invoke_investigation_graph
 
     graph = get_investigation_graph()
     request = InvestigationRequest(question, as_of_utc, knowledge_checked_on_or_before,
-                                   use_llm, thinking_enabled)
+                                   use_llm, thinking_enabled, allow_web)
     runtime = initialize_runtime(
         request, client=client, forecast_db=forecast_db, sonar_db=sonar_db,
         catalog=catalog, root=root, audit_log=audit_log, limits=limits, clock=clock,

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1180" viewBox="0 0 1440 1180" role="img" aria-labelledby="title desc">
+<title id="title">FloodPred Agent architecture</title>
+<desc id="desc">One message is split into chat, conversation memory and project evidence needs. Project tools and hybrid retrieval feed an evidence gate with bounded follow-up. Verified project facts are combined with separately labelled chat and memory responses.</desc>
+<rect width="1440" height="1180" fill="#f8fafc"/>
+<text x="60" y="52" fill="#172b4d" font-family="Arial, sans-serif" font-size="36" font-weight="700" text-anchor="start" dominant-baseline="central">FloodPred Agent</text>
+<text x="60" y="91" fill="#52647e" font-family="Arial, sans-serif" font-size="22" font-weight="400" text-anchor="start" dominant-baseline="central">Conversation-first. Evidence-grounded. Bounded by design.</text>
+<rect x="480" y="128" width="480" height="74" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="720.0" y="158" fill="#172b4d" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">User message</text>
+<polyline points="720,202 720,230" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="720,230 714.7804135906653,219.19463477176788 725.2195864093347,219.19463477176788" fill="#71829c"/>
+<rect x="340" y="230" width="760" height="108" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="720.0" y="260" fill="#2563eb" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Validated demand plan</text>
+<text x="720.0" y="294" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Original spans + history references + dependencies</text>
+<text x="720.0" y="321" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Rules + DeepSeek  |  Thinking only when needed</text>
+<rect x="730" y="385" width="670" height="570" rx="24" fill="#eef5ff" stroke="#d9e6fa" stroke-width="2"/>
+<polyline points="720,338 720,364 210,364 210,415" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="210,415 204.78041359066523,404.1946347717679 215.21958640933477,404.1946347717679" fill="#71829c"/>
+<polyline points="720,338 720,364 535,364 535,415" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="535,415 529.7804135906653,404.1946347717679 540.2195864093347,404.1946347717679" fill="#71829c"/>
+<polyline points="720,338 720,364 1065,364 1065,415" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1065,415 1059.7804135906651,404.1946347717679 1070.2195864093349,404.1946347717679" fill="#71829c"/>
+<rect x="60" y="415" width="300" height="128" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="210.0" y="445" fill="#6450a4" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Casual conversation</text>
+<text x="210.0" y="479" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Natural, contextual replies</text>
+<text x="210.0" y="506" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">No invented project facts</text>
+<rect x="385" y="415" width="300" height="128" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="535.0" y="445" fill="#087f80" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Conversation memory</text>
+<text x="535.0" y="479" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">User statements + past replies</text>
+<text x="535.0" y="506" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Message / replay timestamps</text>
+<rect x="760" y="415" width="610" height="106" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="1065.0" y="445" fill="#2563eb" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Project evidence</text>
+<text x="1065.0" y="479" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Validated question graph + read-only routing</text>
+<polyline points="1065,521 1065,542 905,542 905,562" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="905,562 899.7804135906653,551.1946347717678 910.2195864093347,551.1946347717678" fill="#71829c"/>
+<polyline points="1065,521 1065,542 1225,542 1225,562" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1225,562 1219.7804135906651,551.1946347717678 1230.2195864093349,551.1946347717678" fill="#71829c"/>
+<rect x="760" y="562" width="290" height="108" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="905.0" y="592" fill="#2563eb" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Read-only tools</text>
+<text x="905.0" y="626" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Forecast / observations</text>
+<text x="905.0" y="653" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Versioned evaluation metrics</text>
+<rect x="1080" y="562" width="290" height="108" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="1225.0" y="592" fill="#2563eb" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Hybrid RAG</text>
+<text x="1225.0" y="626" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">BM25 + fixed LSA + RRF</text>
+<text x="1225.0" y="653" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Documents + allowed web</text>
+<polyline points="905,670 905,690 1065,690 1065,714" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1065,714 1059.7804135906651,703.1946347717678 1070.2195864093349,703.1946347717678" fill="#71829c"/>
+<polyline points="1225,670 1225,690 1065,690 1065,714" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1065,714 1059.7804135906651,703.1946347717678 1070.2195864093349,703.1946347717678" fill="#71829c"/>
+<rect x="825" y="714" width="480" height="108" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="1065.0" y="744" fill="#087f80" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Evidence gate</text>
+<text x="1065.0" y="778" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Claim support, citations, units</text>
+<text x="1065.0" y="805" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Time, version and source hashes</text>
+<polyline points="1065,822 1065,835 905,835 905,856" fill="none" stroke="#71829c" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="905,856 899.7804135906653,845.1946347717678 910.2195864093347,845.1946347717678" fill="#71829c"/>
+<polyline points="1065,822 1065,835 1230,835 1230,856" fill="none" stroke="#b77b23" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1230,856 1224.7804135906651,845.1946347717678 1235.2195864093349,845.1946347717678" fill="#b77b23"/>
+<rect x="760" y="856" width="290" height="80" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="905.0" y="886" fill="#087f80" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Checked conclusions</text>
+<text x="905.0" y="920" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Complete or verified subset</text>
+<rect x="1080" y="856" width="290" height="80" rx="18" fill="#ffffff" stroke="#dbe3ed" stroke-width="2"/>
+<text x="1225.0" y="886" fill="#a46914" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Targeted follow-up</text>
+<text x="1225.0" y="920" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Gaps only; at most 3 rounds</text>
+<polyline points="1370,896 1385,896 1385,548 1240,548 1240,562" fill="none" stroke="#b77b23" stroke-width="3" stroke-linejoin="round" stroke-dasharray="7 5"/>
+<polygon points="1240,562 1234.7804135906651,551.1946347717678 1245.2195864093349,551.1946347717678" fill="#b77b23"/>
+<text x="1220" y="974" fill="#7d5a22" font-family="Arial, sans-serif" font-size="18" font-weight="400" text-anchor="middle" dominant-baseline="central">Budget exhausted?</text>
+<text x="1220" y="999" fill="#7d5a22" font-family="Arial, sans-serif" font-size="18" font-weight="400" text-anchor="middle" dominant-baseline="central">Keep supported facts; mark gaps.</text>
+<polyline points="210,543 210,1005 600,1005 600,1035" fill="none" stroke="#8b7bab" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="600,1035 594.7804135906653,1024.1946347717678 605.2195864093347,1024.1946347717678" fill="#8b7bab"/>
+<polyline points="535,543 535,985 720,985 720,1035" fill="none" stroke="#419b9b" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="720,1035 714.7804135906653,1024.1946347717678 725.2195864093347,1024.1946347717678" fill="#419b9b"/>
+<polyline points="905,936 905,1005 840,1005 840,1035" fill="none" stroke="#419b9b" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="840,1035 834.7804135906653,1024.1946347717678 845.2195864093347,1024.1946347717678" fill="#419b9b"/>
+<rect x="420" y="1035" width="600" height="92" rx="18" fill="#e8f3f0" stroke="#dbe3ed" stroke-width="2"/>
+<text x="720.0" y="1065" fill="#0a7468" font-family="Arial, sans-serif" font-size="23" font-weight="700" text-anchor="middle" dominant-baseline="central">Combined reply + inspectable sources</text>
+<text x="720.0" y="1099" fill="#172b4d" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Chat and memory stay separate from verified project facts</text>
+<text x="720" y="1153" fill="#52647e" font-family="Arial, sans-serif" font-size="19" font-weight="400" text-anchor="middle" dominant-baseline="central">Historical replay only  /  Not a live forecast or an official flood alert</text>
+</svg>

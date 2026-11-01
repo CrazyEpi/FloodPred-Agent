@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -44,6 +45,22 @@ class ResultPresentation:
         self.numbers: dict[str, int] = {}
         identities: dict[tuple, int] = {}
         self.titles = {item.citation_id: item.title for item in result.knowledge}
+        self.question_labels = {}
+        for node in result.question_graph.nodes if result.question_graph else ():
+            names = "、".join(s.text for s in node.subjects)
+            if node.source_scope == "internal" and not names.startswith("项目内部"):
+                names = "项目内部 " + names
+            attribute = {"meaning_and_scope": "定义与范围", "value": "数值", "method": "方法",
+                         "comparison": "比较", "connection": "关系", "limitations": "局限"}.get(node.requested_attribute, node.requested_attribute)
+            if re.search(r"活动|参观|开放", node.anchors[0].text):
+                attribute = "活动与日期"
+            self.question_labels[node.id] = f"{names} · {attribute}"
+        groups = {}
+        for claim in result.verified_claims:
+            groups.setdefault((claim.text, claim.status), []).append(claim)
+        self.claim_groups = list(groups.values())
+        self.display_claims = [replace(group[0], citations=tuple(dict.fromkeys(c for claim in group for c in claim.citations)))
+                               for group in self.claim_groups]
         for hit in result.document_candidates:
             for record in (hit.record, *hit.equivalent_records):
                 self.titles.setdefault(record["id"], record["title"])
@@ -52,6 +69,8 @@ class ResultPresentation:
                 self._citations.append(citation)
                 # Document paragraphs from one file/version share a source number.
                 location = re.sub(r":\d+(?:-\d+)?(?: § .*)?$", "", citation.locator)
+                if citation.id.startswith("web:"):
+                    location = re.sub(r"#paragraph-\d+$", "", location)
                 identity = (location, citation.version, citation.sha256)
                 if identity not in identities:
                     self.sources.append(citation)
@@ -63,13 +82,50 @@ class ResultPresentation:
         return "〔来源 " + "、".join(map(str, numbers)) + "〕"
 
     def title(self, citation: Citation) -> str:
+        for snapshot in getattr(self.result, "web_evidence", ()):
+            if citation.id.startswith(snapshot.id + ":"):
+                return snapshot.page.title or SOURCE_LABELS.get(citation.source_type, "公开资料")
         return self.titles.get(citation.id, SOURCE_LABELS.get(citation.source_type, "项目资料"))
+
+    def source_citations(self, number: int):
+        return tuple(dict.fromkeys(c for c in self._citations if self.numbers[c.id] == number))
+
+    def reasons(self, row) -> str:
+        if "比较所需的官方或内部定义仍未查清。" in row.reasons:
+            return "两端定义尚未查全，暂不能完成比较。"
+        official_missing = any("英国官方定义" in reason for reason in row.reasons)
+        readable = []
+        for reason in row.reasons:
+            if official_missing and ("英国官方定义" in reason or reason == "只有链接／目录摘要，没有可核对的原文。"):
+                reason = "未取得可核对的官方原文。"
+            if reason not in readable:
+                readable.append(reason)
+        return "；".join(reason.rstrip("。；") for reason in readable)
+
+    def answer(self) -> str:
+        lines = self.text(self.result.answer_text or "").splitlines()
+        seen, answer = set(), []
+        for line in lines:
+            identity = line.removeprefix("简单说，")
+            if identity in seen and "〔来源 " in line:
+                continue
+            seen.add(identity)
+            answer.append(line)
+        return "\n".join(answer)
 
     def text(self, value: str) -> str:
         """Translate only metadata known in this result, never arbitrary hex strings."""
-        for claim in self.result.verified_claims:
-            original = f"【{claim.id} → {'、'.join(c.id for c in claim.citations)}】"
-            value = value.replace(original, self.reference(claim.citations))
+        for row in self.result.question_evidence:
+            reasons = "；".join(reason.rstrip("。") for reason in dict.fromkeys(row.reasons))
+            old = f"{row.node_id}‘{row.question}’：{reasons}。"
+            label = self.question_labels.get(row.node_id, row.question)
+            value = value.replace(old, f"{label}：{self.reasons(row)}。")
+            old = f"{row.node_id}：{row.question}（{'；'.join(row.reasons)}）"
+            value = value.replace(old, f"{label}（{self.reasons(row)}）")
+        for group, displayed in zip(self.claim_groups, self.display_claims):
+            for claim in group:
+                original = f"【{claim.id} → {'、'.join(c.id for c in claim.citations)}】"
+                value = value.replace(original, self.reference(displayed.citations))
         if self.result.forecast:
             run_id = re.escape(self.result.forecast.run_id)
             value = re.sub(rf"[；;]?\s*run_id\s*[:：=]\s*`?{run_id}`?", "", value)

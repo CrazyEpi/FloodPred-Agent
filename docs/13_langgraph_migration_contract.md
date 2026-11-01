@@ -277,3 +277,13 @@
 覆盖：`tests.test_presentation.PresentationTests` 验证真实预测展示、来源稳定去重、正常十六进制内容保留、原对象不变、调试切换一次调查及失败后清空；`tests.test_streamlit_app.StreamlitAppTests` 保留来源、澄清、局部回答与 Thinking 传参断言；`tests.test_checkpoints.CheckpointTests.test_streamlit_removes_recovery_controls_in_both_modes` 与 `test_streamlit_ordinary_submission_does_not_use_persistence` 替换旧网页恢复用例，后台恢复用例保持。
 
 当前测试结果见 [界面报告](../reports/ui_debug_mode_2026-10-28.md)。历史阶段的报告及验收记录保持原样。
+
+## 9. 网页证据与问题去重：当前新增约定
+
+前述历史冻结点的 60／20 秒默认值与原入口签名不再代表当前新增能力。新调查总预算 120 秒、单次模型最多 40 秒；新增 `allow_web=False` 关键字，网页显式以默认开启的侧边栏开关传入，CLI 需 `--allow-web`。原有只读数值、时间闸门和异常约定保留。
+
+问题身份规范化保留原始定位和来源／时间限定；内部与论文 Caution 不合并，官方 Flood Warning 不走项目内部 Warning。定义比较允许有依据的限定推导，直接因果／继承边界不放宽。
+
+`WebSnapshot` 是不可变候选快照，经正文、来源、日期、引文及问题属性检查才生成结论。`QueryResult` 新增默认空的网页快照及执行记录；旧已知字段集合兼容读取，未知字段仍拒绝。旧持久任务缺联网字段按关闭，缺单次时限按 20 秒，原总预算和累计次数保留。
+
+覆盖与真实测试位置：`tests.test_web_integration.WebIntegrationTests`，包括长短实体三节点、三个主题、在线失败、搜索摘要不授权、公开查询隔离、明确日期、原文损坏、共享额度、无效模型选择、旧格式、网络中断不重发、唯一审计和界面隔离。当前实测结果与范围见 [网页集成报告](../reports/web_answer_integration_2026-10-28.md)。

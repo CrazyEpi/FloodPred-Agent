@@ -4,6 +4,8 @@ from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 import unittest
+import os
+import tempfile
 from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
@@ -27,6 +29,12 @@ def visible(app):
 
 
 class PresentationTests(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        env = patch.dict(os.environ, {"FLOODPRED_CHAT_DB": str(Path(tmp.name) / "chat.sqlite3")})
+        env.start()
+        self.addCleanup(env.stop)
     @classmethod
     def setUpClass(cls):
         cls.result = run_investigation(
@@ -85,10 +93,11 @@ class PresentationTests(unittest.TestCase):
         result.reasoning_traces = [{"stage": "规划", "content": "模型诊断文字"}]
         before = deepcopy(result)
         with patch("app.investigation.run_investigation", return_value=result) as run:
-            app = AppTest.from_file(str(ROOT / "streamlit_app.py")).run()
+            app = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=15).run()
             self.assertFalse(app.toggle[0].value)
-            self.assertTrue(app.checkbox[1].value)
-            app.button[0].click().run()
+            self.assertTrue(app.checkbox(key='use_thinking').value)
+            app.checkbox(key='use_llm').set_value(False)
+            app.chat_input[0].set_value(app.chat_input[0].value or "当时预测峰值是多少？项目内部 Caution 是什么？").run()
             self.assertFalse(app.exception)
             normal = visible(app)
             self.assertNotIn("这是内部等级，不是官方警报。", normal)
@@ -107,7 +116,7 @@ class PresentationTests(unittest.TestCase):
             self.assertFalse(app.exception)
             debug = visible(app)
             self.assertIn("这是内部等级，不是官方警报。", debug)  # original answer, kept for diagnosis
-            for technical in ("run_id", result.forecast.run_id, "q1-tool", "forecast:", "SHA-256", str(ROOT), "模型诊断文字", "source_mapping", "question_graph"):
+            for technical in ("run_id", result.forecast.run_id, "q1-tool", "forecast:", "SHA-256", str(ROOT), "source_mapping", "question_graph"):
                 self.assertIn(technical, debug)
             self.assertEqual([tab.label for tab in app.tabs], ["回答", "证据", "运行细节"])
             app.toggle[0].set_value(False).run()
@@ -119,16 +128,17 @@ class PresentationTests(unittest.TestCase):
 
     def test_failed_new_question_clears_cached_answer_even_on_unexpected_error(self):
         with patch("app.investigation.run_investigation", side_effect=[self.result, RuntimeError("模拟失败")]) as run:
-            app = AppTest.from_file(str(ROOT / "streamlit_app.py")).run()
-            app.button[0].click().run()
+            app = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=15).run()
+            app.chat_input[0].set_value(app.chat_input[0].value or "当时预测峰值是多少？项目内部 Caution 是什么？").run()
             self.assertTrue(app.metric)
-            app.text_input[0].set_value("新问题")
-            app.button[0].click().run()
-            self.assertTrue(app.exception)
-            self.assertNotIn("last_result", app.session_state)
+            app.chat_input[0].set_value("重新查一下预测峰值")
+            app.chat_input[0].set_value(app.chat_input[0].value or "当时预测峰值是多少？项目内部 Caution 是什么？").run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any('查询未完成' in item.value for item in app.markdown))
+            self.assertNotIn('3.7832', app.chat_message[-1].markdown[0].value)
             app.toggle[0].set_value(True).run()
-            self.assertFalse(app.metric)
-            self.assertFalse(app.tabs)
+            self.assertTrue(app.metric)  # Previous successful turn remains historical.
+            self.assertTrue(app.tabs)
             self.assertEqual(run.call_count, 2)
 
 

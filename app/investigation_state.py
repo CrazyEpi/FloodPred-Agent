@@ -29,6 +29,7 @@ class InvestigationRequest:
     knowledge_checked_on_or_before: str | None = None
     use_llm: bool = False
     thinking_enabled: bool | None = None
+    allow_web: bool = False
 
 
 class BudgetHandle(Protocol):

@@ -118,9 +118,9 @@ def _topics(node: QuestionItem) -> set[str]:
     topics: set[str] = set()
     if re.search(r"watch|caution|观察等级|留意等级", subject):
         topics.update(("internal_watch", "thesis_risk_terms"))
-    if re.search(r"warning|警告等级|洪水线", subject) or ("4.43" in anchor and "分级" in anchor):
+    if (re.search(r"warning|警告等级|洪水线", subject) and node.source_scope != "official") or ("4.43" in anchor and "分级" in anchor):
         topics.update(("internal_warning", "thesis_risk_terms"))
-    if re.search(r"flood\s*alert|官方预警", subject):
+    if re.search(r"flood\s*(?:alert|warning)|官方预警", subject):
         topics.add("official_flood_alert")
     if re.search(r"旧|以前|早期|原来|之前|duncan|声纳|传感|水位仪|水位设备|测水设备|探头", subject):
         topics.add("housemill_old_sensor")
@@ -262,6 +262,19 @@ def assess_evidence(result: QueryResult, *, root: Path) -> None:
                 row.status = RELATED
                 row.reasons.append("拿到的是事后评估，不能把它当成回放时刻已知的 MAE。")
             continue
+        from .web_evidence import claims_for_node, temporal_rejection
+        public_claims = [claim for snapshot in result.web_evidence for claim in claims_for_node(result, node, snapshot)]
+        if public_claims:
+            claims.extend(public_claims)
+            row.status, row.claim_ids = DIRECT, [claim.id for claim in public_claims]
+            row.checks = dict.fromkeys(row.checks, True)
+            continue
+        if node.temporal_scope == "public_current":
+            row.reasons.append("尚未取得能回答该时间范围的公开原文及明确日期。")
+            continue
+        time_reasons = [run["reason"] for run in result.web_runs if run.get("node_id") == node.id and run.get("status") == "time_scope_rejected"]
+        if time_reasons:
+            row.reasons.extend(time_reasons)
         topics = _topics(node)
         if re.fullmatch(r"(?:那|它)?为什么(?:会)?受(?:潮汐|潮水)影响", normalize_input(node.anchors[0].text)):
             preceding = [n for n in result.question_graph.nodes if int(n.id[1:]) < int(node.id[1:])]
@@ -370,6 +383,26 @@ def assess_evidence(result: QueryResult, *, root: Path) -> None:
             row.status, row.claim_ids = DERIVED, [claim.id]
             row.checks = dict.fromkeys(row.checks, True)
             claims.append(claim)
+        elif (node.question_type == "comparison"
+              and re.search(r"caution|watch|warning", subjects)
+              and re.search(r"官方|flood alert|environment agency", subjects)):
+            if not endpoints_ok:
+                row.status, row.claim_ids = UNSUPPORTED, []
+                claims = [claim for claim in claims if claim.node_id != node.id]
+                row.reasons = ["比较所需的官方或内部定义仍未查清。"]
+                continue
+            endpoint_claims = [c for c in claims if c.node_id in node.depends_on]
+            citations = tuple(dict.fromkeys(c for claim in endpoint_claims for c in claim.citations))
+            if any(c.source_type == "internal_project" for c in citations) and any(c.source_type == "official_public_guidance" for c in citations):
+                text = "按两端已取得的定义对照：项目内部等级依据预测水位阈值分档；英格兰 Environment Agency 的预警定义描述洪水发生的可能性或预期。两者的发布主体、适用范围和判定表述不同。"
+                claim = VerifiedClaim(f"{node.id}-derive", node.id, text, citations, DERIVED,
+                    "按各自原文的主体、范围和定义逐项对照，不推出等级或水位数值的一一对应。")
+                if _valid_claim(claim):
+                    row.status, row.claim_ids = DERIVED, [claim.id]
+                    row.checks = dict.fromkeys(row.checks, True)
+                    claims.append(claim)
+            if row.status not in SUPPORTED:
+                row.reasons.append("两端资料的来源范围不足以支持这项定义对照。")
         elif row.status != DIRECT:
             row.status = RELATED if endpoints_ok else UNSUPPORTED
             row.reasons.append("缺少直接比较／关系材料；不能仅凭两个相关段落生成关系结论。")
@@ -383,6 +416,7 @@ def assess_evidence(result: QueryResult, *, root: Path) -> None:
             row.reasons = []
         elif "official_flood_alert" in _topics(next(node for node in result.question_graph.nodes if node.id == row.node_id)):
             row.reasons.insert(0, "英国官方定义缺少可核对的原文。")
+        row.reasons = list(dict.fromkeys(row.reasons))
     result.verified_claims = list(unique.values())
     result.question_evidence = rows
     result.source_rejections = rejected
@@ -453,12 +487,19 @@ def render_checked_answer(result: QueryResult, *, selected: list[tuple[str, int]
 
 def verify_final_claims(result: QueryResult, root: Path) -> None:
     """Recheck citation ID/version/quote/hash after an optional model call."""
+    from .source_snapshot import fresh_verification
+    fresh_verification()
     records = {record["id"]: record for hit in result.document_candidates
                for record in (hit.record, *hit.equivalent_records)}
     valid, failed_nodes = [], set()
     for claim in result.verified_claims:
         okay = _valid_claim(claim)
         for citation in claim.citations:
+            if citation.id.startswith("web:"):
+                from .web_evidence import verify_web_citation
+                if not verify_web_citation(result, claim.node_id, citation):
+                    okay = False
+                continue
             if citation.source_type in {"historical_forecast", "historical_observation", "evaluation_report"} and citation.id.startswith(("forecast:", "water:", "evaluation:")):
                 # Frozen, validated tool output. Do not run a hidden extra SQL tool.
                 if citation.source_type == "evaluation_report":

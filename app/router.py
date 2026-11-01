@@ -18,6 +18,7 @@ from .hybrid_retrieval import document_requests, hybrid_search, make_request, me
 from .rag import ChatClient, DeepSeekClient, IntentPlan, RAGError, explain_hit
 from .question_graph import QuestionGraph, build_question_graph, excluded_concepts, excluded_routes
 from .web_policy import decide_web
+from .web_evidence import WebSnapshot
 from .read_tools import (
     EvaluationArgs,
     EvaluationMetric,
@@ -90,6 +91,8 @@ class QueryResult:
     verified_claims: list[VerifiedClaim] = field(default_factory=list, repr=False)
     source_rejections: dict[str, str] = field(default_factory=dict, repr=False)
     web_decisions: list[dict] = field(default_factory=list)
+    web_evidence: list[WebSnapshot] = field(default_factory=list, repr=False)
+    web_runs: list[dict] = field(default_factory=list, repr=False)
 
 
 DEFAULT_AUDIT_LOG = ROOT / "logs" / "requests.jsonl"
@@ -140,7 +143,8 @@ def _reject_unsafe_intent(question: str) -> None:
         raise UnsupportedRoute("本应用不能发布、发送或冒充官方洪水警报。")
     if re.search(r"(api.?key|密钥|token|密码).{0,20}(显示|泄露|输出|告诉|给我|读取)", q) or re.search(r"(显示|泄露|输出|告诉|给我|读取).{0,20}(api.?key|密钥|token|密码)", q):
         raise UnsupportedRoute("不能读取或展示密钥。")
-    if re.search(r"(当前|现在|实时|此刻|今天).{0,20}(官方警报|官方预警|floodalert|floodwarning)", q):
+    definition_only = bool(re.search(r"如何定义|怎么定义|含义|定义|区别|什么意思", q)) and not re.search(r"有没有|是否有|生效|已发布|正在|安全吗", q)
+    if re.search(r"(当前|现在|实时|此刻|今天).{0,20}(官方警报|官方预警|floodalert|floodwarning)", q) and not definition_only:
         raise UnsupportedRoute("本应用不查询实时官方警报；请使用官方实时服务。")
     if (re.search(r"(当前|现在|实时|此刻|今天).{0,12}(水位|洪水风险|洪水预测|预测水位)", q)
         or re.search(r"(水位|洪水风险|洪水预测|预测水位).{0,12}(当前|现在|实时|此刻|今天)", q)) and not any(
@@ -217,14 +221,14 @@ def plan_route(question: str, *, semantic_concepts: tuple[str, ...] = ()) -> Rou
         if concept not in concepts:
             concepts.append(concept)
 
-    official = "官方" in q or "environmentagency" in q
+    official = "官方" in q or "environmentagency" in q or "floodalert" in q or "floodwarning" in q
     if "watch" in q or "caution" in q or "观察等级" in q or "留意等级" in q:
         if not official or "项目" in q or "内部" in q:
             add("internal_watch")
     if "warning" in q or "警告等级" in q or "洪水线" in q:
         if not official or "项目" in q or "内部" in q:
             add("internal_warning")
-    if "floodalert" in q and (official or any(word in q for word in ("是什么", "含义", "定义"))):
+    if ("floodalert" in q or "floodwarning" in q) and (official or any(word in q for word in ("是什么", "含义", "定义"))):
         add("official_flood_alert")
     if "论文" in q and any(word in q for word in ("caution", "风险", "等级", "warning", "watch", "阈值")):
         add("thesis_risk_terms")
@@ -295,6 +299,7 @@ def run_query(
     generate_answer: bool = True,
     tool_guard: Callable[[str], None] | None = None,
     evaluation_paths: tuple[Path, Path] | None = None,
+    _defer_public_reply: bool = False,
 ) -> QueryResult:
     request_id = uuid4().hex
     timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -362,6 +367,8 @@ def run_query(
             document_request = any(cue in q for cue in ("布置", "摆放", "安装", "位置", "哪里", "方法", "背景", "需要", "研究", "输入", "论文"))
             if domain and document_request:
                 local_plan = RoutePlan(("knowledge",), (), None)
+    if _defer_public_reply and not question_graph.needs_clarification and any(d.allowed for d in decide_web(question_graph, allow_web=True)):
+        local_plan = local_plan or RoutePlan(("knowledge",), (), None)
     if proposed and proposed.mode in ("greeting", "general") and local_plan is None:
         project_cues = ("floodpred", "洪水", "水位", "预警", "警报", "预测", "mae", "模型", "项目", "论文", "watch", "caution", "warning", "patchtst")
         if any(cue in question.casefold() for cue in project_cues):

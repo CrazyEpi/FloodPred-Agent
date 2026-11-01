@@ -87,7 +87,7 @@ class InvestigationStateTests(unittest.TestCase):
 
     def test_snapshot_does_not_reset_clock_or_mark_unchecked_expiry(self):
         elapsed = [100.0]
-        budget = _Budget(InvestigationLimits(), lambda: elapsed[0])
+        budget = _Budget(InvestigationLimits(max_seconds=60), lambda: elapsed[0])
         elapsed[0] = 112.5
         self.assertEqual(snapshot_budget(budget).remaining_seconds, 47.5)
         elapsed[0] = 161.0

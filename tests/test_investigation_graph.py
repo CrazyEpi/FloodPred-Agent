@@ -407,7 +407,18 @@ class InvestigationGraphTests(unittest.TestCase):
         self.assertEqual(factory.return_value.invoke.call_args.kwargs["config"]["recursion_limit"], 64)
 
     def test_public_signature_types_and_frozen_reference_provenance(self):
-        self.assertEqual(str(inspect.signature(investigation.run_investigation)), str(inspect.signature(legacy.run_investigation)))
+        previous = inspect.signature(legacy.run_investigation)
+        current = inspect.signature(investigation.run_investigation)
+        self.assertEqual(set(current.parameters), set(previous.parameters) | {"allow_web"})
+        for name, original in previous.parameters.items():
+            actual = current.parameters[name]
+            self.assertEqual(actual.kind, original.kind)
+            self.assertEqual(actual.annotation, original.annotation)
+            if name != "limits":
+                self.assertEqual(actual.default, original.default)
+        self.assertIs(current.parameters["allow_web"].default, False)
+        self.assertEqual(current.parameters["limits"].default.max_seconds, 120)
+        self.assertEqual(current.parameters["limits"].default.llm_request_timeout_seconds, 40)
         self.assertIs(investigation.InvestigationLimits, core.InvestigationLimits)
         self.assertIs(investigation._Budget, core._Budget)
         for path in (ROOT / "app").glob("*.py"):
@@ -430,7 +441,10 @@ class InvestigationGraphTests(unittest.TestCase):
             self.assertEqual(messages[0], messages[1], options)
         for options in ({"max_rounds": 2, "max_tool_calls": 1, "max_llm_calls": 2, "max_seconds": 1},
                         {"max_rounds": 3, "max_tool_calls": 12, "max_llm_calls": 6, "max_seconds": 180}):
-            self.assertEqual(canonical(legacy.InvestigationLimits(**options)), canonical(core.InvestigationLimits(**options)))
+            old = canonical(legacy.InvestigationLimits(**options))
+            new = canonical(core.InvestigationLimits(**options))
+            self.assertEqual(old, {key: new[key] for key in old})
+            self.assertEqual(new["llm_request_timeout_seconds"], 40)
 
     def test_host_tracing_setting_cannot_export_graph_questions(self):
         actual = core.first_pass

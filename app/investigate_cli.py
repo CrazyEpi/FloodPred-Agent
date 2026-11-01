@@ -16,6 +16,7 @@ def main() -> int:
     parser.add_argument("--as-of", default="2026-08-03T01:48:00Z", help="Historical replay cutoff in UTC")
     parser.add_argument("--knowledge-checked-on-or-before", help="Only use knowledge snapshots checked by YYYY-MM-DD")
     parser.add_argument("--llm", action="store_true", help="Use configured DeepSeek for planning/review/explanation")
+    parser.add_argument("--allow-web", action="store_true", help="Allow bounded public-source gap filling")
     parser.add_argument("--thinking", action="store_true", help="Enable DeepSeek thinking for the initial plan and final explanation")
     parser.add_argument("--max-tool-calls", type=int, choices=range(1, 13), default=8,
                         help="Read-only tool budget, 1–12 (default: 8)")
@@ -23,7 +24,7 @@ def main() -> int:
     try:
         result = run_investigation(args.question, as_of_utc=args.as_of,
                                    knowledge_checked_on_or_before=args.knowledge_checked_on_or_before,
-                                   use_llm=args.llm, thinking_enabled=args.thinking,
+                                   use_llm=args.llm, thinking_enabled=args.thinking, allow_web=args.allow_web,
                                    limits=InvestigationLimits(max_tool_calls=args.max_tool_calls))
     except UnsupportedRoute as exc:
         print(f"拒绝：{exc}")
@@ -38,6 +39,10 @@ def main() -> int:
         "stop_reason": result.investigation_stop_reason,
         "run_id": result.forecast.run_id if result.forecast else None,
         "sources": [{"id": item.citation_id, "fact": item.fact, "locator": item.locator} for item in result.knowledge],
+        "web_sources": [{"id": item.id, "url": item.page.url, "title": item.page.title,
+                         "fetched_at_utc": item.page.fetched_at_utc, "published_at": item.page.published_at}
+                        for item in result.web_evidence],
+        "web_runs": result.web_runs,
         "errors": result.errors,
         "warnings": result.warnings,
         "question_graph": result.question_graph.to_dict() if result.question_graph else None,

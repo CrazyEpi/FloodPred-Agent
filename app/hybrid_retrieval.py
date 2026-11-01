@@ -263,9 +263,9 @@ def merge_candidates(existing: list[Hit], additions: tuple[Hit, ...] | list[Hit]
 
 
 def _bm25(query: str, records: list[dict[str, Any]], texts: list[str]) -> dict[str, float]:
-    documents = [Counter(_tokens(normalize_input(text))) for text in texts]
-    average_length = sum(sum(document.values()) for document in documents) / max(1, len(documents))
-    document_frequency = Counter(term for document in documents for term in document)
+    from .retrieval_index import lexical_index
+    documents, lengths, document_frequency, average_length = lexical_index(
+        tuple(tuple(_tokens(normalize_input(text))) for text in texts))
     terms = set(_tokens(normalize_input(query)))
     scores = {}
     for record, document in zip(records, documents):
@@ -341,8 +341,13 @@ def hybrid_search(request: RetrievalRequest, *, version: str | None = None,
     semantic_records = [{**record, "summary": text} for record, text in zip(records, texts)]
     rankings = []
     for index, query in enumerate(request.queries):
-        lexical = _bm25(query.text, records, texts)
-        semantic = _semantic_rank(query.text, semantic_records)
+        # Only ranking scores may be reused. Every source above has already
+        # been read/hashed again; conflicts and claim checks below still run.
+        from .chat_memory import cached_scores
+        lexical = cached_scores('bm25', query.text, records, texts,
+                                lambda: _bm25(query.text, records, texts))
+        semantic = cached_scores('lsa', query.text, records, texts,
+                                 lambda: _semantic_rank(query.text, semantic_records))
         for channel, values, minimum in (("keyword", lexical, 0.0), ("semantic_candidate", semantic, 0.30)):
             ranking = [(record["id"], values.get(record["id"], 0.0)) for record, text in zip(records, texts)
                        if values.get(record["id"], 0.0) > minimum

@@ -13,6 +13,12 @@ from .web_policy import decide_web
 from .web_tools import NetworkBudget, RawResponse, WebToolError, search_public_web, fetch_public_page
 
 
+def _preview_dict(page):
+    data = asdict(page)
+    data.pop("raw_body")
+    return data
+
+
 class _DemoTransport:
     def get(self, url, *, budget, accept, **kwargs):
         budget.reserve()
@@ -24,7 +30,7 @@ class _DemoTransport:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="FloodPred 联网策略/工具预览（未接入回答）")
+    parser = argparse.ArgumentParser(description="FloodPred 独立联网工具预览（问答请用 investigate_cli --allow-web）")
     parser.add_argument("action", choices=("policy", "search", "fetch", "demo"))
     parser.add_argument("question", nargs="?", default="House Mill 最近有什么活动？")
     parser.add_argument("--allow-web", action="store_true", help="授权本次独立工具调用；不改变网页主流程")
@@ -38,7 +44,7 @@ def main():
             graph = plan.question_graph or graph
         decisions = decide_web(graph, allow_web=args.allow_web)
         output = {"question_graph": graph.to_dict(), "web_decisions": [d.to_dict() for d in decisions],
-                  "answer_integration": "not_implemented_steps_3_to_6", "simulated": args.action == "demo"}
+                  "answer_integration": "standalone_preview_only", "simulated": args.action == "demo"}
         if args.action != "policy":
             allowed = [d for d in decisions if d.allowed]
             if not allowed:
@@ -52,13 +58,13 @@ def main():
             elif args.action == "fetch":
                 if not args.url:
                     raise WebToolError("fetch 需要 --url")
-                output["page_preview"] = asdict(fetch_public_page(args.url, decision=decision, budget=budget))
+                output["page_preview"] = _preview_dict(fetch_public_page(args.url, decision=decision, budget=budget))
             else:
                 transport = _DemoTransport()
                 with patch("app.web_tools._api_key", return_value="OFFLINE_FIXTURE"):
                     hits = search_public_web(fragment, decision=decision, budget=budget, transport=transport)
                 output["search_candidates"] = [asdict(h) for h in hits]
-                output["page_preview"] = asdict(fetch_public_page(hits[0].url, decision=decision, budget=budget, transport=transport))
+                output["page_preview"] = _preview_dict(fetch_public_page(hits[0].url, decision=decision, budget=budget, transport=transport))
             output["network_requests"] = budget.calls
         print(json.dumps(output, ensure_ascii=False, indent=2))
         return 0

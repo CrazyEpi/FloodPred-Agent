@@ -49,9 +49,11 @@ _SENSITIVE = re.compile(r"https?://|file://|[A-Z]:[\\/]|api[_ -]?key|bearer|密�
 
 def topic_for(text: str) -> str | None:
     q = text.casefold()
+    if re.search(r"研究|论文|research|paper|publication", q) and re.search(r"house\s*mill|wilson|floodpred|patchtst|旧传感器", q):
+        return "project_research"
     if any(c in q for c in ("house mill", "housemill", "三磨坊")):
         return "housemill"
-    if any(c in q for c in ("官方", "environment agency", "flood alert", "flood warning")) and any(
+    if (any(c in q for c in ("官方", "environment agency")) or re.search(r"flood\s*(?:alert|warning)", q)) and any(
             c in q for c in ("洪水", "flood", "预警", "warning")):
         return "official_flood"
     if any(c in q for c in ("floodpred", "patchtst", "duncan wilson", "旧传感器")) and any(
@@ -65,6 +67,8 @@ def local_hint(text: str) -> NetworkHint:
     fresh = "current" if _CURRENT.search(text) else "static"
     numeric = bool(_NUMERIC.search(text))
     project = numeric or bool(re.search(r"内部|服务端|论文中|毕业论文|旧传感器|floodpred|patchtst", text, re.I))
+    if topic == "project_research" and not numeric and not re.search(r"内部|服务端|论文中|毕业论文", text):
+        project = False
     scope = "project" if project else "public" if topic else "general"
     local = "yes" if project or (topic == "housemill" and fresh == "static") else "unknown"
     needed = bool(topic and not numeric and (fresh == "current" or re.search(r"联网|上网|搜网页|官方|公开资料", text)))

@@ -59,32 +59,25 @@ cd C:\UCL\CASA0016\FloodPred-Agent
 
 侧边栏“调试模式”默认关闭；开启后增加“运行细节”，展示原始引用、来源定位、运行 JSON 和已有模型诊断。开关只重新展示最近结果，不重新取证；网页已移除恢复码功能，恢复请用 [CLI 指南](14_checkpoints_and_demo.md)。
 
-程序优先使用服务进程的 `DEEPSEEK_API_KEY`，未设置时读取当前项目根目录 `.env`。只读核对已确认项目 `.env` 中密钥有效，DeepSeek `/models` 返回 HTTP 200 且包含当前 `deepseek-v4-pro`；这不代表已验证完整聊天生成或解决所有超时。此次未改客户端、模型、Thinking 默认值、预算或响应处理，也未额外发起真实模型生成。
+程序优先使用服务进程的 `DEEPSEEK_API_KEY`，未设置时读取当前项目根目录 `.env`。只读核对已确认项目 `.env` 中密钥有效，DeepSeek `/models` 返回 HTTP 200 且包含当前 `deepseek-v4-pro`；这不代表已验证完整聊天生成或解决所有超时。此前只读核对期间没有调整调用逻辑；本次已按批准方案调整编排预算，见下节。模型、Thinking 默认值及底层请求／响应解析保持，没有额外发起真实模型生成。
 
-## 多步调查超时：位置与调整顺序
+## 当前超时与联网配置
 
-当前有两层限制，不由 `.env` 配置：
+这些值由代码／`InvestigationLimits` 管理，不从 `.env` 读取：
 
-| 位置 | 当前值 | 含义 |
+| 限制 | 新调查默认值 | 配置位置 |
 |---|---|---|
-| `app/investigation_core.py::InvestigationLimits.max_seconds` | 60 秒；允许 1–180 秒 | 整个多步调查的协作式总预算 |
-| `app/investigation_core.py::_Budget.reserve_llm` | `min(20.0, max(1.0, self.remaining()))` | 每次模型调用前覆盖客户端超时，最多 20 秒 |
-| `app/rag.py::DeepSeekClient._call` | Thinking 90 秒／非 Thinking 40 秒，再与调用方限制取较小值 | 原 HTTP 客户端超时；多步路径通常被上一行的 20 秒压低 |
+| 整个调查 | 120 秒，允许 1–180 秒 | `InvestigationLimits.max_seconds` |
+| 每次模型请求 | 40 秒，允许 1–90 秒，同时受剩余预算约束 | `InvestigationLimits.llm_request_timeout_seconds` 与 `_Budget.reserve_llm` |
+| HTTP 客户端 | Thinking 90 秒／非 Thinking 40 秒，再与调用方限制取较小值 | `DeepSeekClient._call`，底层响应解析未改 |
+| 网络子预算 | 每个调查最多 4 请求／20 秒，同时计入共享工具数和总时间 | `web_evidence.py::_SharedNetworkBudget` |
 
-所以只增加 60 秒总预算，或只把客户端 90 秒调高，都不能解除多步路径的单次 20 秒限制。单轮问答没有这层 `_Budget` 覆盖，可能表现为单轮成功、多步反而超时。
+旧持久任务仍沿用保存的总时限；缺少新单次限制字段时按旧 20 秒恢复，不重新发放额度。总预算和 HTTP 阻塞超时都不是进程级精确硬截止。
 
-先在调试页区分：`errors` 中的 `LLMRequestError`／`TimeoutError` 是请求失败线索；`investigation_stop_reason=time_limit` 表示总预算耗尽；`llm_limit` 是调用次数上限；`finish_reason=length` 则是输出未完整结束，不是等待超时。没有逐次真实调用耗时数据时，不能只凭超时认定 DeepSeek 服务本身缓慢。
+网页“允许联网补查”默认开启，仅在多步调查的公开资料缺口生效。关闭后下一次提交不联网；切换开关不重新调查最近结果。单轮继续本地查询。项目数值不使用外部网页替代。
 
-建议顺序（建议没有自动修改代码）：
+慢请求可先关闭 Thinking，用同问题与回放时间对照；调试开关不影响推理。原代码已使用 `reasoning_effort=low`。没有自动重试；内部排序失败只作调试记录，模型网络失败仍以可读提示说明，保留已取得的有效证据。`time_limit` 是总时限，`llm_limit` 是调用次数上限，`TimeoutError` 是请求失败线索，`finish_reason=length` 是输出未完整结束，应分别定位。
 
-1. 保持多步调查，取消“开启 Thinking”，用同一问题、同一回放时间比较。调试开关只影响展示，关闭调试不等于关闭 Thinking。当前代码已使用 `reasoning_effort=low`，继续降低该字段不是现成的主要优化点。
-2. 仍被单次请求截断时，可先把 `_Budget.reserve_llm` 的 `20.0` 试为 `40.0`，总预算使用 `InvestigationLimits(max_seconds=120)`。若决定保留 Thinking，可试单次 45–60 秒、总预算 120–180 秒；实际单次还要受剩余总预算约束。提高等待阈值只增加容忍时间，不会提高模型生成速度。
-3. 网页当前没有超时滑块。局部调整总预算应只在 `use_investigation` 分支调用 `run_investigation(..., limits=InvestigationLimits(max_seconds=120))`，不要把 `limits` 参数传给 `run_query()`。也可修改限制类默认值影响所有普通调用方；已有持久调查的限制来自保存状态，不会追溯更改。
-4. 后续真正提速可以分别评估：只对复杂规划启用 Thinking；程序能判断的缺口不再请模型排序；已核验的简单数值使用本地表达；缩短重复证据和不必要的输出；对当前问题图做回归后比较 `deepseek-flash`。这些属于后续实现和实测范围，当前没有变更模型或调用逻辑。
-5. 当前 `stream=False`，流式响应能改善等待反馈，但需要完整接收 JSON 并通过原校验后才能给出正式答案；不能保证总推理时间下降。不要为超时直接加自动重试，避免重复等待和额外计费。
+Brave 密钥可选；没有时仍可直连登记的 GOV.UK、House Mill 和项目来源。搜索发出的是公开主题模板，不包含完整混合问题、归档批次或本地路径。运行环境禁止联网时，允许开关不会绕过系统权限；结果会保留已有部分。当前服务本次没有重启，直接刷新页面即可；不要启动第二份服务。
 
-HTTP `urlopen(timeout=...)` 主要限制阻塞网络操作，既有总预算也在程序检查点协作检查，二者都不能解释为进程级精确硬截止。若要严格取消，需要另行设计。
-
-官方接口说明：[Thinking 开关](https://api-docs.deepseek.com/guides/thinking_mode/)、[当前模型](https://api-docs.deepseek.com/quick_start/pricing/)。本次仅核对代码和官方文档，没有额外调用真实聊天 API。
-
-网页已移除固定的内部／官方及非实时免责声明；数值、日期、来源原文、证据不足、来源冲突和实际错误继续展示。调试页保留原始回答和原始引用映射，便于复核；后台回答与来源资料未改写。
+实测联网样例、离线失败演示和完整测试命令见 [公开网页取证与演示](15_web_evidence_and_demo.md)。本次没有额外调用真实 DeepSeek 生成，也没有改 `.env`、模型、Thinking 默认值或底层响应处理。

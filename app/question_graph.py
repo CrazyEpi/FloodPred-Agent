@@ -28,7 +28,7 @@ ENTITY = re.compile(
     r"FloodPred\s*(?:项目)?(?:的)?\s*(?:预测方法|预测模型|预测|模型)|"
     r"(?:旧|新|早期|以前的|原来的)\s*(?:传感器|声纳|水位仪|监测设备|监测系统|系统)|"
     r"(?:现在的|现有的|目前的)?\s*(?:预测峰值|预测最高水位|预测最高|预测方法|预测)|"
-    r"(?:历史|当时|实测|观测|声纳)水位|平均绝对误差|MAE|Caution|Watch|Warning|"
+    r"(?:历史|当时|实测|观测|声纳)水位|平均绝对误差|MAE|Caution|Watch|(?:Severe\s+)?Flood\s*Warning|Warning|"
     r"Flood\s*Alert|官方预警|英国官方预警|FloodPred|House\s*Mill|三磨坊|"
     r"PatchTST|Duncan\s*Wilson|\d+(?:\.\d+)?\s*(?:次|分钟)|模型|论文|志愿者|它们|它|这个设备|这套系统", re.I)
 
@@ -95,11 +95,12 @@ def _span(text: str, start: int, end: int) -> SourceSpan:
     return SourceSpan(start, end, text[start:end])
 
 
-def _unique(spans: list[SourceSpan]) -> tuple[SourceSpan, ...]:
-    seen: set[str] = set()
+def _unique(spans: list[SourceSpan], original_text: str = "") -> tuple[SourceSpan, ...]:
+    seen: set[tuple] = set()
     result = []
     for span in spans:
-        key = normalize_input(span.text)
+        authorities = list(re.finditer(r"内部|官方|毕业论文|论文", original_text[:span.start]))
+        key = (normalize_input(span.text), authorities[-1].group() if authorities else None)
         if key not in seen:
             seen.add(key)
             result.append(span)
@@ -178,13 +179,13 @@ def _scopes(anchor: SourceSpan, subjects: tuple[SourceSpan, ...]) -> tuple[str, 
     if len(subjects) == 1 and anchor.start <= subjects[0].start:
         subject = subjects[0]
         prefix = anchor.text[:subject.end - anchor.start]
-        authorities = list(re.finditer(r"内部|官方", prefix))
+        authorities = list(re.finditer(r"内部|官方|毕业论文|论文", prefix))
         if authorities:
             scope_text = authorities[-1].group() + " " + normalize_input(subject.text)
     internal = "内部" in scope_text
-    official = "官方" in scope_text or "flood alert" in scope_text or "floodalert" in scope_text
+    official = "官方" in scope_text or bool(re.search(r"flood\s*(?:alert|warning)", scope_text))
     source = "mixed" if internal and official else ("internal" if internal else "official" if official else
-             "thesis" if "论文" in q else "prior_project" if re.search(r"旧|早期", names) else "unspecified")
+             "thesis" if "论文" in scope_text else "prior_project" if re.search(r"旧|早期", names) else "unspecified")
     return temporal, source
 
 
@@ -220,17 +221,29 @@ def _explicit_exclusion(text: str) -> bool:
                          r"(?:不要|不用|别查|不需要)", text.strip()))
 
 
+def canonical_subject(text: str) -> str:
+    """Identity only: never rewrite the raw span or erase its source scope."""
+    name = normalize_input(text)
+    match = re.fullmatch(r"(?:(?:项目)?内部(?:的)?\s*)?(caution|watch|warning)", name)
+    if match:
+        return "caution" if match[1] in ("watch", "caution") else "warning"
+    return name
+
+
 def _merge_nodes(items: list[QuestionItem]) -> tuple[QuestionItem, ...]:
     result: list[QuestionItem] = []
     mapping: dict[str, str] = {}
     keys: dict[tuple, int] = {}
+    identities: dict[str, tuple] = {}
     for item in items:
         derived_scopes = bool(item.depends_on) and item.question_type in ("relation", "comparison", "cause")
         atomic_kind = "atomic" if item.question_type in ("fact", "definition") else item.question_type
-        key = (tuple(normalize_input(span.text) for span in item.subjects), item.requested_attribute,
+        key = (tuple(canonical_subject(span.text) for span in item.subjects), item.requested_attribute,
                atomic_kind, "dependency_scopes" if derived_scopes else item.temporal_scope,
                "dependency_scopes" if derived_scopes else item.source_scope, item.excluded,
-               tuple(span.text for span in item.qualifiers if re.search(r"不是|不能|并非|没有|未", span.text)))
+               tuple(span.text for span in item.qualifiers if re.search(r"不是|不能|并非|没有|未|\d{4}-", span.text)),
+               tuple(identities.get(dep, (dep,)) for dep in item.depends_on))
+        identities[item.id] = key
         if key in keys:
             index = keys[key]
             previous = result[index]
@@ -277,7 +290,7 @@ def build_question_graph(text: str) -> QuestionGraph:
         subjects: list[SourceSpan] = []
         for mention in _entity_spans(text, anchor):
             if mention.text in ("它", "它们", "这个设备", "这套系统"):
-                candidates = _unique(subjects) or previous
+                candidates = _unique(subjects, text) or previous
                 resolved = len(candidates) == 1 or (mention.text == "它们" and bool(candidates))
                 references.append(Coreference(mention, candidates, "resolved" if resolved else "ambiguous"))
                 if resolved:
@@ -286,7 +299,7 @@ def build_question_graph(text: str) -> QuestionGraph:
                     clarifications.append(f"你说的‘{mention.text}’具体指哪个对象？")
                 continue
             subjects.append(mention)
-        chosen = _unique(subjects)
+        chosen = _unique(subjects, text)
         if not chosen:
             # An anchored unknown subject can later be refined by DeepSeek.
             if not references or references[-1].status != "ambiguous":
@@ -400,7 +413,7 @@ def checked_question_graph(text: str, proposal: object) -> QuestionGraph:
                 raise GraphValidationError("关系对象与依赖节点的对象不一致。")
         if kind == "cause" and not re.search(r"为什么|为何|原因", anchor.text):
             raise GraphValidationError("原因问题缺少原文依据。")
-        item = _make_item(text, anchor, _unique(extracted), kind, "m" + item_id,
+        item = _make_item(text, anchor, _unique(extracted, text), kind, "m" + item_id,
                           tuple("m" + dep for dep in dependencies))
         if "network_request" in value:
             try:
@@ -411,7 +424,8 @@ def checked_question_graph(text: str, proposal: object) -> QuestionGraph:
             attribute = "method" if any(re.search(r"方法|结构|设计", span.text) for span in extracted) else "meaning_and_scope"
             item = replace(item, requested_attribute=attribute)
         parents = [candidate for candidate in local.nodes
-                   if candidate.subjects == item.subjects and candidate.requested_attribute == item.requested_attribute
+                   if tuple(canonical_subject(s.text) for s in candidate.subjects) == tuple(canonical_subject(s.text) for s in item.subjects)
+                   and candidate.requested_attribute == item.requested_attribute
                    and any(parent.start <= anchor.start and anchor.end <= parent.end for parent in candidate.anchors)]
         if len(parents) == 1:
             parent = parents[0]
