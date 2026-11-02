@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 _SOURCE_CATALOG = ROOT / "knowledge" / "catalog.json"
 _DEMO_CATALOG = ROOT / "demo_data" / "knowledge" / "catalog.json"
 _DATA_MODE = os.environ.get("FLOODPRED_DATA_MODE", "")
-DEFAULT_CATALOG = _DEMO_CATALOG if _DATA_MODE == "demo" or not (ROOT / "backup" / "source_snapshot_2026-09-29").is_dir() else _SOURCE_CATALOG
+DEFAULT_CATALOG = _DEMO_CATALOG if _DATA_MODE == "demo" or not (ROOT / "runtime_data" / "source_snapshot_2026-09-29").is_dir() else _SOURCE_CATALOG
 THESIS_CATALOG = ROOT / "knowledge" / "thesis_catalog.json"
 RULES_CATALOG = ROOT / "knowledge" / "rules_catalog.json"
 HOUSEMILL_CATALOG = ROOT / "knowledge" / "housemill_catalog.json"

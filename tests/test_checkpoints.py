@@ -187,7 +187,7 @@ class CheckpointTests(unittest.TestCase):
             for debug in (False, True):
                 app.toggle[0].set_value(debug).run()
                 self.assertFalse(app.exception)
-                self.assertEqual(len(app.text_input), 3)
+                self.assertEqual(len(app.text_input), 3 if debug else 2)
                 self.assertEqual(len(app.chat_input), 1)
                 self.assertEqual(len(app.checkbox), 7)
                 labels = [item.label for kind in (app.text_input, app.checkbox, app.button, app.expander) for item in kind]
@@ -207,7 +207,7 @@ class CheckpointTests(unittest.TestCase):
              patch("app.investigation.resume_investigation") as resume:
             app = AppTest.from_file(str(ROOT / "streamlit_app.py")).run(timeout=10)
             app.checkbox(key='use_llm').set_value(False)
-            app.chat_input[0].set_value('当时预测峰值是多少？').run(timeout=10)
+            app.chat_input[0].set_value('2026-08-03T01:48:00Z 当时预测峰值是多少？').run(timeout=10)
             app.toggle[0].set_value(True).run()
             self.assertFalse(app.exception)
             self.assertTrue(any("普通回答" in item.value for item in app.markdown))

@@ -1,6 +1,7 @@
 .venv/
 .venv-d4/
 backup/
+runtime_data/
 logs/
 state/
 __pycache__/

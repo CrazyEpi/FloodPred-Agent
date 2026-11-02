@@ -18,7 +18,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_SOURCE_DB = PROJECT_ROOT / "backup" / "source_snapshot_2026-09-29" / "forecast_evaluation" / "prediction_history.sqlite3"
+_SOURCE_DB = PROJECT_ROOT / "runtime_data" / "source_snapshot_2026-09-29" / "forecast_evaluation" / "prediction_history.sqlite3"
 _DEMO_DB = PROJECT_ROOT / "demo_data" / "forecast_evaluation" / "prediction_history.sqlite3"
 _DATA_MODE = os.environ.get("FLOODPRED_DATA_MODE", "")
 DEFAULT_DB = _DEMO_DB if _DATA_MODE == "demo" or not _SOURCE_DB.is_file() else _SOURCE_DB

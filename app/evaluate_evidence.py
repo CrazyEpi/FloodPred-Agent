@@ -59,6 +59,7 @@ def main() -> int:
                "scope": "固定小样本证据状态回归，不是开放问题准确率、语义蕴含证明或洪水检出率。",
                "flood_event_detection_validated": False, "results": rows}
     output = Path(__file__).resolve().parents[1] / "reports" / "stage3_4_evidence_results.json"
+    output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({"passed": summary["passed"], "total": summary["total"], "report": str(output),
                       "failed": [row["id"] for row in rows if not row["passed"]]}, ensure_ascii=False))

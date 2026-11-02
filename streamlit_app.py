@@ -389,7 +389,7 @@ with st.sidebar:
 context = conversation["state"]
 from app.conversation import TOPICS
 labels = "、".join(TOPICS.get(key, key) for key in context["topics"]) or "尚未选定"
-st.caption(f"当前话题：{labels} · 回放时间：{context['as_of_utc']} · 非实时水情／非官方警报")
+st.caption(f"当前话题：{labels} · 历史资料查询，非实时水情／非官方警报")
 if context.get("run_id"):
     with st.expander("当前预测绑定"):
         st.caption("已绑定一条归档预测。追问会重新查归档，不从历史回答复制数值；修改时间后旧绑定失效。原始标识可在调试模式查看。")
@@ -400,10 +400,36 @@ from app.checkpoint_codec import CheckpointCodec
 
 debug_mode = st.sidebar.toggle("调试模式", value=False, key="debug_mode")
 allow_web = st.sidebar.toggle("允许联网补查", value=True, key="allow_web")
-as_of_utc = st.sidebar.text_input("历史回放时刻（UTC）", value=context["as_of_utc"], key="replay_time")
+as_of_utc = None
+if debug_mode:
+    as_of_utc = st.sidebar.text_input("调试固定业务时刻（UTC）", value=context["as_of_utc"], key="replay_time")
+    st.sidebar.warning("调试时间覆盖已开启：项目点时查询统一使用此时刻，原话时间仅供核对。生活聊天和消息时间不受影响。")
+else:
+    st.sidebar.caption("正常模式：使用用户指定的真实日期。House Mill 未注明时区时按 Europe/London 解释，不默认使用演示日期。")
 use_llm = st.sidebar.checkbox("用 DeepSeek 理解和回答", value=bool(DeepSeekClient().api_key), key="use_llm")
 use_thinking = st.sidebar.checkbox("复杂问题允许深度思考", value=True, key="use_thinking")
 use_investigation = st.sidebar.checkbox("多步调查（最多 3 轮）", value=True, key="use_investigation")
+with st.sidebar.expander("示例与使用说明"):
+    examples={
+        '聊天与记忆':['你是谁','我喜欢摄影','我刚才说喜欢什么？'],
+        '历史数据':['2025年12月31日晚上11点45分 UTC 的 House Mill 内部水位是多少？','31 December 2025 at 11:45pm UTC water level'],
+        '预测与资料':['2026-08-03T01:48:00Z 当时预测峰值是多少？','项目内部 Warning 是什么？'],
+        '比较分析':['2025年12月31日23点45分 UTC 的内部水位，跟前一天比涨了吗？','2025年12月30日23点45分 UTC 至 2025年12月31日23点45分 UTC 的内部水位均值是多少？'],
+        '边界与混合问题':['那天早上八点河里多高？','2023年1月2日早上8点的水位是多少？项目内部 Warning 是什么？']}
+    group=st.selectbox("问题分类",list(examples),key='example_group')
+    for example in examples[group]: st.code(example,language=None)
+    st.caption("复制到底部输入框，再按发送。查看示例不会调用模型或更改时间。调试覆盖开启时请勿用比较示例。")
+with st.sidebar.expander("数据源与覆盖范围"):
+    try:
+        import json
+        from app.history_data import CATALOG
+        sources=json.loads(CATALOG.read_text(encoding='utf-8'))['sources']
+        st.caption(f"已登记 {len(sources)} 份历史文件；时间范围不代表中间无缺失。")
+        for kind,label in [('processed_history','处理后历史'),('integrated_training','整合训练'),('raw_sensor','原始传感器')]:
+            selected=[s for s in sources if s['kind']==kind]
+            if selected: st.write(f"{label}：{min(s['first'] for s in selected)} 至 {max(s['last'] for s in selected)}")
+        st.caption("原始距离、处理后水位、预测归档不是同一种数据。2026 年预测／观测归档由独立只读工具查询。")
+    except (OSError,ValueError,KeyError): st.warning("历史来源目录不可用，请先生成并核对目录。")
 visible = st.session_state.get("visible_turns", 30)
 if len(conversation["turns"]) > visible:
     if st.button("加载更早记录"):
@@ -424,6 +450,13 @@ for turn in conversation["turns"][-visible:]:
         if debug_mode:
             with st.expander("需求与上下文解析"):
                 st.json(__import__("json").loads(turn["context_json"]))
+            with st.expander("时间 来源 分析与依据"):
+                diagnostic=__import__('json').loads(turn['context_json'])
+                st.write('原文时间 → 解析时间 → 调试覆盖／实际执行时间 → 查询来源 → 结果分析 → 回答依据')
+                st.json({'time_policy':diagnostic.get('time_policy','legacy'),
+                    'parsed_time':diagnostic.get('parsed_time'),
+                    'demands':[{'id':n.get('id'),'text':n.get('text'),'query':n.get('query'),
+                        'status':n.get('status'),'evidence':n.get('project_evidence',[])} for n in diagnostic.get('needs',[])]})
 question = st.chat_input("聊点什么，或问我项目里的问题", key="chat_prompt")
 if question:
     try:
@@ -431,7 +464,8 @@ if question:
             outcome = submit_dialogue(store, capability, question, as_of_utc=as_of_utc,
                 use_llm=use_llm, thinking_enabled=use_thinking, allow_web=allow_web,
                 use_investigation=use_investigation, context_budget=int(context_budget),
-                progress=lambda text: status_box.update(label=text))
+                progress=lambda text: status_box.update(label=text),
+                time_mode='debug' if debug_mode else 'normal')
             status_box.update(label="完成", state="complete")
         st.session_state["chat_access"][capability] = store.load(capability)["title"]
         st.session_state.pop("replay_time", None)

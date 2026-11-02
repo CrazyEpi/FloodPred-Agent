@@ -20,7 +20,7 @@ from .replay import latest_observation_as_of
 
 
 AS_OF = "2026-08-03T01:48:00Z"
-SOURCE = ROOT / "backup" / "source_snapshot_2026-09-29"
+SOURCE = ROOT / "runtime_data" / "source_snapshot_2026-09-29"
 TARGET = ROOT / "demo_data"
 
 

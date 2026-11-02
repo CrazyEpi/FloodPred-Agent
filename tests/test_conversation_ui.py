@@ -34,6 +34,7 @@ class ConversationUITests(unittest.TestCase):
         return app
 
     def send(self, app, text):
+        if text == '当时预测峰值是多少？': text = '2026-08-03T01:48:00Z '+text
         app.chat_input[0].set_value(text)
         app.run()
         self.assertFalse(app.exception)

@@ -131,7 +131,7 @@ class PresentationTests(unittest.TestCase):
             app = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=15).run()
             app.chat_input[0].set_value(app.chat_input[0].value or "当时预测峰值是多少？项目内部 Caution 是什么？").run()
             self.assertTrue(app.metric)
-            app.chat_input[0].set_value("重新查一下预测峰值")
+            app.chat_input[0].set_value("2026-08-03T01:48:00Z 重新查一下预测峰值")
             app.chat_input[0].set_value(app.chat_input[0].value or "当时预测峰值是多少？项目内部 Caution 是什么？").run()
             self.assertFalse(app.exception)
             self.assertTrue(any('查询未完成' in item.value for item in app.markdown))

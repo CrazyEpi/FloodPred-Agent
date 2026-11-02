@@ -1,0 +1,679 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "202306",
+      "relative_path": "data/sonar/202306.csv",
+      "sha256": "7c69c6459eaf2cd4282b63f917bafa459a2b6d654ee9b5503946fc609d99ffc7",
+      "first": "2023-06-06T11:40:12.557419633Z",
+      "last": "2023-06-30T23:50:13.231894413Z",
+      "rows": 9502,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202307",
+      "relative_path": "data/sonar/202307.csv",
+      "sha256": "7ecfb27607fefb62d84a1d0add7568a6b373a9a7923aaf187804eb7ff912b9d3",
+      "first": "2023-07-01T00:00:12.569393639Z",
+      "last": "2023-07-31T23:50:12.856613274Z",
+      "rows": 12834,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202308",
+      "relative_path": "data/sonar/202308.csv",
+      "sha256": "a06d79e276c1405d2c86eb07081fced0ffae643f001a657922ed3d5b19ffccbe",
+      "first": "2023-08-01T00:00:12.973256566Z",
+      "last": "2023-08-31T23:50:16.138487322Z",
+      "rows": 13364,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202309",
+      "relative_path": "data/sonar/202309.csv",
+      "sha256": "1de9e50d07e1cbc1ed8622da45b6b3224f3c06ecb66bb6432af9943d3cd5b3a9",
+      "first": "2023-09-01T00:00:14.984750233Z",
+      "last": "2023-09-30T23:46:04.81168573Z",
+      "rows": 12599,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202310",
+      "relative_path": "data/sonar/202310.csv",
+      "sha256": "13d68f7f902adeec49aae5a7b0df7ae58a0c9188e886eb37fed904b557134681",
+      "first": "2023-10-01T00:01:03.956483407Z",
+      "last": "2023-10-29T23:46:02.485004032Z",
+      "rows": 9639,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202311",
+      "relative_path": "data/sonar/202311.csv",
+      "sha256": "c13b2df6e75582aec7048fe534639a5694e6213b10205e95c104d5eac65721eb",
+      "first": "2023-11-02T17:40:13.391371905Z",
+      "last": "2023-11-30T23:46:02.317362445Z",
+      "rows": 9623,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202312",
+      "relative_path": "data/sonar/202312.csv",
+      "sha256": "699b1cd389eeeac88c10e8f41e5897bf51a2aeca9243d6beee0da175ccca9aef",
+      "first": "2023-12-01T00:01:02.476779091Z",
+      "last": "2023-12-31T21:31:03.972601571Z",
+      "rows": 10392,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202401",
+      "relative_path": "data/sonar/202401.csv",
+      "sha256": "33e31c7550c9bceed8311f29681b4868467ac5ebdbc565980580fdb446b7e73e",
+      "first": "2024-01-01T00:31:19.195329073Z",
+      "last": "2024-01-31T23:46:03.171504656Z",
+      "rows": 10454,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202402",
+      "relative_path": "data/sonar/202402.csv",
+      "sha256": "169eb450618244064a1e0ffe38b3bd60a8d07b6c053d706cf567b9b54ebbe33c",
+      "first": "2024-02-01T00:01:02.717000224Z",
+      "last": "2024-02-29T23:46:03.583191991Z",
+      "rows": 10446,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202403",
+      "relative_path": "data/sonar/202403.csv",
+      "sha256": "eb970fd01d7ed06a8bff0111c2b2fa1bb5acece3d0e6aaac0c840eaf8ee9411b",
+      "first": "2024-03-01T00:01:03.244759981Z",
+      "last": "2024-03-31T23:46:02.618749639Z",
+      "rows": 10641,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202404",
+      "relative_path": "data/sonar/202404.csv",
+      "sha256": "64b33e09540dbd299042e6768b43b13ac69de956dd4444ae8f09f20547e7a39a",
+      "first": "2024-04-01T00:01:02.795740197Z",
+      "last": "2024-04-30T23:46:03.044092929Z",
+      "rows": 10383,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202405",
+      "relative_path": "data/sonar/202405.csv",
+      "sha256": "6529044d5c9a1b6e188290c230cf44decb1b09c6adede99981adcab6ad32ca5a",
+      "first": "2024-05-01T00:01:02.68292661Z",
+      "last": "2024-05-31T23:46:03.213784915Z",
+      "rows": 10570,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202406",
+      "relative_path": "data/sonar/202406.csv",
+      "sha256": "778d32a7986f82cb1f2202bfa98b518b2dee05b238a270d1d09dc5f6f5413b52",
+      "first": "2024-06-01T00:01:04.014717548Z",
+      "last": "2024-06-30T23:50:12.909792519Z",
+      "rows": 11726,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202407",
+      "relative_path": "data/sonar/202407.csv",
+      "sha256": "757e4a945946b5573d4811d29a1c8e0222786d8c6b394fc5e5e6d9fee5ca5688",
+      "first": "2024-07-01T00:00:13.286864639Z",
+      "last": "2024-07-31T23:50:13.391896745Z",
+      "rows": 13282,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202408",
+      "relative_path": "data/sonar/202408.csv",
+      "sha256": "e927a6058cebeffd8b717a0cdda6c8442f9416e9537ccb57873ba082ddecea1c",
+      "first": "2024-08-01T00:00:12.7319667Z",
+      "last": "2024-08-31T23:50:13.506729466Z",
+      "rows": 9263,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202409",
+      "relative_path": "data/sonar/202409.csv",
+      "sha256": "03911ccfca87084675c4993d0dd3cf6dc09cc720f9ced11ea119c5a23c95e1bc",
+      "first": "2024-09-01T00:00:12.783857942Z",
+      "last": "2024-09-30T23:50:12.791011061Z",
+      "rows": 3107,
+      "fields": [
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202410",
+      "relative_path": "data/sonar/202410.csv",
+      "sha256": "46cbfcedeaa9089b7fd8099e1d73d7437565f72523e32e551a416decd31e9552",
+      "first": "2024-10-01T00:00:13.354058198Z",
+      "last": "2024-10-31T23:50:13.472601259Z",
+      "rows": 10004,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202411",
+      "relative_path": "data/sonar/202411.csv",
+      "sha256": "e4f059dc67a596324cfcd0fba2a0ea6f941240b26dda628258f8e1c5db73f4bb",
+      "first": "2024-11-01T00:00:12.856703876Z",
+      "last": "2024-11-30T23:50:13.143020638Z",
+      "rows": 9977,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202412",
+      "relative_path": "data/sonar/202412.csv",
+      "sha256": "dfce6eaf47480168e8c29afb5a2c58a85cb680b7efac411025c4c67164c004ec",
+      "first": "2024-12-01T00:00:13.527184689Z",
+      "last": "2024-12-31T23:50:12.61173762Z",
+      "rows": 12174,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202501",
+      "relative_path": "data/sonar/202501.csv",
+      "sha256": "71b97ce119eeffe12af3a4e3f38444561d34d06bb49dde219e458c1cc1a8b8ae",
+      "first": "2025-01-01T00:00:12.994451886Z",
+      "last": "2025-01-31T23:50:12.693657919Z",
+      "rows": 13359,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202502",
+      "relative_path": "data/sonar/202502.csv",
+      "sha256": "dcf6891a5becfa7b5d8918ad92cc953a191b807338f1e319ac3da31f3f5290f1",
+      "first": "2025-02-01T00:00:13.19059508Z",
+      "last": "2025-02-28T23:50:13.475582225Z",
+      "rows": 12082,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202503",
+      "relative_path": "data/sonar/202503.csv",
+      "sha256": "5129670cfc8732fac89b757146915c95c4c2c270ca24d86ad70878b537397230",
+      "first": "2025-03-01T00:00:12.82240036Z",
+      "last": "2025-03-31T23:50:13.516847443Z",
+      "rows": 13359,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202504",
+      "relative_path": "data/sonar/202504.csv",
+      "sha256": "29d04b46157c443f8385574e5374dd908fceb854175f7f21045ae54629cc13bf",
+      "first": "2025-04-01T00:00:13.249984536Z",
+      "last": "2025-04-30T23:50:13.461596219Z",
+      "rows": 12833,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202505",
+      "relative_path": "data/sonar/202505.csv",
+      "sha256": "b919d15f4d3d5e2b276ffa2b4182fc94e2b395c0d604984a2e5f93c4698c3aac",
+      "first": "2025-05-01T00:00:12.85722849Z",
+      "last": "2025-05-31T23:50:13.368328871Z",
+      "rows": 13380,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202506",
+      "relative_path": "data/sonar/202506.csv",
+      "sha256": "02ff95739ed6f0adc8d5e6002838fec82cd1920b85cfe8ece31d30c3d5e44168",
+      "first": "2025-06-01T00:00:13.173762312Z",
+      "last": "2025-06-30T23:50:12.646240167Z",
+      "rows": 12920,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202507",
+      "relative_path": "data/sonar/202507.csv",
+      "sha256": "53cfe46869ca02b46de1a5a8e6647c52a46f8ff0c01d7edc73890ab653a19ee4",
+      "first": "2025-07-01T00:00:13.012186537Z",
+      "last": "2025-07-31T23:50:13.54728122Z",
+      "rows": 13351,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202508",
+      "relative_path": "data/sonar/202508.csv",
+      "sha256": "4e897f593287883fe6c271973a79230d12b9ece864b939ecb9bbebf3cea92709",
+      "first": "2025-08-01T00:00:12.853009885Z",
+      "last": "2025-08-31T23:50:14.043048624Z",
+      "rows": 13226,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202509",
+      "relative_path": "data/sonar/202509.csv",
+      "sha256": "3a1002e5fe9aec237c1ff215de312bff7ae77213f3d98de49e6500f6d99df85a",
+      "first": "2025-09-01T00:00:13.669063449Z",
+      "last": "2025-09-30T23:50:12.952992996Z",
+      "rows": 12537,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202510",
+      "relative_path": "data/sonar/202510.csv",
+      "sha256": "db1ac433a8c383410e9509e09e117c1aa51c0028338e271544fbb0b48e9dcf16",
+      "first": "2025-10-01T00:00:13.645027276Z",
+      "last": "2025-10-31T23:50:12.799257028Z",
+      "rows": 13080,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202511",
+      "relative_path": "data/sonar/202511.csv",
+      "sha256": "2414072a5284a8fb283d23056e4f60ff2c9cb37b3ad6dd0746484f71ebebd911",
+      "first": "2025-11-01T00:00:13.156384725Z",
+      "last": "2025-11-30T23:50:13.09568953Z",
+      "rows": 12801,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "202512",
+      "relative_path": "data/sonar/202512.csv",
+      "sha256": "597b4e60f88e92ebd4dccb9d2444986f5924b20891b47d18c16c61e13de4d2c1",
+      "first": "2025-12-01T00:00:13.439781418Z",
+      "last": "2025-12-31T23:50:12.660226382Z",
+      "rows": 11900,
+      "fields": [
+        "personal/ucjtdjw/housemill/LeaBridgeRiver/height",
+        "personal/ucjtdjw/housemill/SilvertownTidal/height",
+        "personal/ucjtdjw/housemill/TowerPierTidal/height",
+        "personal/ucjtdjw/housemill/sonar/distance"
+      ],
+      "kind": "raw_sensor",
+      "timezone": "UTC",
+      "unit": "channel-specific: sonar distance mm; station heights m",
+      "processing": "none recorded by importer",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "house_mill_integrated_dataset",
+      "relative_path": "house_mill_integrated_dataset.csv",
+      "sha256": "2aeef3e1ac3add18cef9a5e24a295b021609fa35e555f9dc32502abdb1e811ef",
+      "first": "2023-06-06 11:30:00+00:00",
+      "last": "2025-12-31 23:45:00+00:00",
+      "rows": 90194,
+      "fields": [
+        "_time",
+        "chalk_bridge_sluice_rain_mm",
+        "deptford_rain_mm",
+        "hornsey_rain_mm",
+        "hour_cos",
+        "hour_sin",
+        "internal_water_m",
+        "lea_height_m",
+        "moon_phase",
+        "sheerness_tidal_m",
+        "silver_tidal_m",
+        "sonar_dist_mm",
+        "sonar_dist_mm_cleaned",
+        "tower_tidal_m",
+        "wanstead_rain_mm"
+      ],
+      "kind": "integrated_training",
+      "timezone": "UTC",
+      "unit": "internal_water_m: m, sensor-relative, not official datum",
+      "processing": "derived; review pipeline: median filtering, 15-minute mean, clipping; integrated also includes interpolation",
+      "availability": "historical event time only; original ingestion time unknown"
+    },
+    {
+      "id": "house_mill_processed",
+      "relative_path": "house_mill_processed.csv",
+      "sha256": "3c0003286163a935003761247077d6f03e5093c19b22c58d101f238a5990d030",
+      "first": "2023-06-06 11:30:00+00:00",
+      "last": "2025-12-31 23:45:00+00:00",
+      "rows": 90194,
+      "fields": [
+        "_time",
+        "chalk_bridge_sluice_rain_mm",
+        "deptford_rain_mm",
+        "hornsey_rain_mm",
+        "internal_water_m",
+        "lea_height_m",
+        "silver_tidal_m",
+        "sonar_dist_mm",
+        "sonar_dist_mm_cleaned",
+        "tower_tidal_m",
+        "wanstead_rain_mm"
+      ],
+      "kind": "processed_history",
+      "timezone": "UTC",
+      "unit": "internal_water_m: m, sensor-relative, not official datum",
+      "processing": "derived; review pipeline: median filtering, 15-minute mean, clipping; integrated also includes interpolation",
+      "availability": "historical event time only; original ingestion time unknown"
+    }
+  ],
+  "field_definitions": {
+    "internal_water_m": {
+      "site": "House Mill internal",
+      "unit": "m",
+      "datum": "sensor-relative; reference pipeline uses 5m minus sonar distance; not official elevation datum"
+    },
+    "sonar_dist_mm": {
+      "site": "House Mill sonar",
+      "unit": "mm",
+      "meaning": "distance, not water height"
+    },
+    "lea_height_m": {
+      "site": "Lea Bridge",
+      "unit": "m",
+      "datum": "station-specific, not verified comparable to House Mill"
+    },
+    "silver_tidal_m": {
+      "site": "Silvertown",
+      "unit": "m",
+      "datum": "station-specific, not verified comparable to House Mill"
+    },
+    "tower_tidal_m": {
+      "site": "Tower Pier",
+      "unit": "m",
+      "datum": "station-specific, not verified comparable to House Mill"
+    }
+  },
+  "reference_pipeline_hashes_not_generation_proof": {
+    "main_pipeline.py": "54460df560e1b148f4497dca6ba7a3fd713813ba5633b4c581f9575d508b77eb",
+    "processors\\sonar_processor.py": "f6eec17e71148956b940c57d61a4120b2f324f6efd47954b2ea9d914666ca9ea"
+  },
+  "warning": "Processed CSV versions are not interchangeable. Raw distance is not water height."
+}

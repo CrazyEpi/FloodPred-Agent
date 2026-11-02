@@ -43,7 +43,8 @@ def main():
             report['turns'].append({'question':q,'answer':result.answer,'debug':result.resolution.debug})
             print(json.dumps({'question':q,'answer':result.answer,'calls':result.resolution.debug['llm_calls'],
                               'seconds':result.resolution.debug['elapsed_seconds']},ensure_ascii=False),flush=True)
-    path=Path('reports/dialogue_live.json' if args.live else 'reports/dialogue_offline.json')
+    path=Path(__file__).resolve().parents[2]/'ProjectTemp-Floodpred'/'reports'/('dialogue_live.json' if args.live else 'dialogue_offline.json')
+    path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     print('Saved',path)
 
